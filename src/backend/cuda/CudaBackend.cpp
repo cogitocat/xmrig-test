@@ -202,14 +202,6 @@ public:
 
     inline void start(const Job &)
     {
-        LOG_INFO("%s use profile " BLUE_BG(WHITE_BOLD_S " %s ") WHITE_BOLD_S " (" CYAN_BOLD("%zu") WHITE_BOLD(" thread%s)") " scratchpad " CYAN_BOLD("%zu KB"),
-                 tag,
-                 profileName.data(),
-                 threads.size(),
-                 threads.size() > 1 ? "s" : "",
-                 algo.l3() / 1024
-                 );
-
         Log::print(WHITE_BOLD("|  # | GPU |  BUS ID |    I |   T |   B | BF |  BS |  MEM | NAME"));
 
         size_t i = 0;
@@ -224,7 +216,7 @@ public:
                        data.thread.blocks(),
                        data.thread.bfactor(),
                        data.thread.bsleep(),
-                       (data.thread.threads() * data.thread.blocks()) * algo.l3() / oneMiB,
+                       (data.thread.threads() * data.thread.blocks()) * CnAlgo::CN_MEMORY / oneMiB,
                        data.device.name().data()
                        );
 
@@ -267,13 +259,10 @@ public:
     }
 #   endif
 
-
-    Algorithm algo;
     Controller *controller;
     CudaLaunchStatus status;
     std::vector<CudaDevice> devices;
     std::vector<CudaLaunchData> threads;
-    String profileName;
     uint32_t driverVersion      = 0;
     uint32_t runtimeVersion     = 0;
     Workers<CudaLaunchData> workers;
@@ -316,7 +305,7 @@ bool xmrig::CudaBackend::isEnabled() const
 
 bool xmrig::CudaBackend::isEnabled(const Algorithm &algorithm) const
 {
-    return !d_ptr->controller->config()->cuda().threads().get(algorithm).isEmpty();
+    return !d_ptr->controller->config()->cuda().threads().get().isEmpty();
 }
 
 
@@ -324,13 +313,6 @@ const xmrig::Hashrate *xmrig::CudaBackend::hashrate() const
 {
     return d_ptr->workers.hashrate();
 }
-
-
-const xmrig::String &xmrig::CudaBackend::profileName() const
-{
-    return d_ptr->profileName;
-}
-
 
 const xmrig::String &xmrig::CudaBackend::type() const
 {
@@ -398,15 +380,12 @@ void xmrig::CudaBackend::setJob(const Job &job)
         return stop();
     }
 
-    auto threads = cuda.get(d_ptr->controller->miner(), job.algorithm(), d_ptr->devices);
+    auto threads = cuda.get(d_ptr->controller->miner(), d_ptr->devices);
     if (!d_ptr->threads.empty() && d_ptr->threads.size() == threads.size() && std::equal(d_ptr->threads.begin(), d_ptr->threads.end(), threads.begin())) {
         return;
     }
 
-    d_ptr->algo         = job.algorithm();
-    d_ptr->profileName  = cuda.threads().profileName(job.algorithm());
-
-    if (d_ptr->profileName.isNull() || threads.empty()) {
+    if (threads.empty()) {
         LOG_WARN("%s " RED_BOLD("disabled") YELLOW(" (no suitable configuration found)"), tag);
 
         return stop();
@@ -474,8 +453,6 @@ rapidjson::Value xmrig::CudaBackend::toJSON(rapidjson::Document &doc) const
     Value out(kObjectType);
     out.AddMember("type",       type().toJSON(), allocator);
     out.AddMember("enabled",    isEnabled(), allocator);
-    out.AddMember("algo",       d_ptr->algo.toJSON(), allocator);
-    out.AddMember("profile",    profileName().toJSON(), allocator);
 
     if (CudaLib::isReady()) {
         Value versions(kObjectType);

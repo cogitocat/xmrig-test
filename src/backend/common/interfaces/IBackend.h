@@ -34,7 +34,6 @@
 
 namespace xmrig {
 
-
 class Algorithm;
 class Hashrate;
 class IApiRequest;
@@ -51,7 +50,6 @@ public:
     virtual bool isEnabled() const                                      = 0;
     virtual bool isEnabled(const Algorithm &algorithm) const            = 0;
     virtual const Hashrate *hashrate() const                            = 0;
-    virtual const String &profileName() const                           = 0;
     virtual const String &type() const                                  = 0;
     virtual void execCommand(char command)                              = 0;
     virtual void prepare(const Job &nextJob)                            = 0;

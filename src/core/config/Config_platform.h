@@ -44,8 +44,6 @@ static const char short_options[] = "a:c:kBp:Px:r:R:s:t:T:o:u:O:v:l:S";
 
 
 static const option options[] = {
-    { "algo",                  1, nullptr, IConfig::AlgorithmKey          },
-    { "coin",                  1, nullptr, IConfig::CoinKey               },
 #   ifdef XMRIG_FEATURE_HTTP
     { "api-worker-id",         1, nullptr, IConfig::ApiWorkerIdKey        },
     { "api-id",                1, nullptr, IConfig::ApiIdKey              },
@@ -64,11 +62,9 @@ static const option options[] = {
     { "cpu-affinity",          1, nullptr, IConfig::CPUAffinityKey        },
     { "cpu-priority",          1, nullptr, IConfig::CPUPriorityKey        },
     { "donate-level",          1, nullptr, IConfig::DonateLevelKey        },
-    { "donate-over-proxy",     1, nullptr, IConfig::ProxyDonateKey        },
     { "dry-run",               0, nullptr, IConfig::DryRunKey             },
     { "keepalive",             0, nullptr, IConfig::KeepAliveKey          },
     { "log-file",              1, nullptr, IConfig::LogFileKey            },
-    { "nicehash",              0, nullptr, IConfig::NicehashKey           },
     { "no-color",              0, nullptr, IConfig::ColorKey              },
     { "no-huge-pages",         0, nullptr, IConfig::HugePagesKey          },
     { "pass",                  1, nullptr, IConfig::PasswordKey           },
@@ -89,13 +85,6 @@ static const option options[] = {
 #   ifdef XMRIG_FEATURE_TLS
     { "tls",                   0, nullptr, IConfig::TlsKey                },
     { "tls-fingerprint",       1, nullptr, IConfig::FingerprintKey        },
-#   endif
-#   ifdef XMRIG_FEATURE_ASM
-    { "asm",                   1, nullptr, IConfig::AssemblyKey           },
-#   endif
-#   ifdef XMRIG_ALGO_RANDOMX
-    { "randomx-init",          1, nullptr, IConfig::RandomXInitKey        },
-    { "randomx-no-numa",       0, nullptr, IConfig::RandomXNumaKey        },
 #   endif
 #   ifdef XMRIG_FEATURE_OPENCL
     { "opencl",                0, nullptr, IConfig::OclKey                },

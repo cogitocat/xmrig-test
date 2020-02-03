@@ -131,12 +131,7 @@ bool xmrig::SelfSelectClient::parseResponse(int64_t id, rapidjson::Value &result
         return false;
     }
 
-    if (pool().coin().isValid()) {
-        m_job.setAlgorithm(pool().coin().algorithm(m_job.blob()[0]));
-    }
-
     m_job.setHeight(Json::getUint64(result, kHeight));
-    m_job.setSeedHash(Json::getString(result, kSeedHash));
 
     submitBlockTemplate(result);
 

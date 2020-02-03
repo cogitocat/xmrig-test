@@ -43,6 +43,7 @@
 #include "rapidjson/error/en.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
+#include "backend/common/VarInt.h"
 
 
 #ifdef XMRIG_FEATURE_TLS
@@ -102,11 +103,7 @@ int64_t xmrig::DaemonClient::submit(const JobResult &result)
         return -1;
     }
 
-#   ifdef XMRIG_PROXY_PROJECT
-    memcpy(m_blocktemplate.data() + 78, result.nonce, 8);
-#   else
     Buffer::toHex(reinterpret_cast<const uint8_t *>(&result.nonce), 4, m_blocktemplate.data() + 78);
-#   endif
 
     using namespace rapidjson;
     Document doc(kObjectType);
@@ -116,11 +113,7 @@ int64_t xmrig::DaemonClient::submit(const JobResult &result)
 
     JsonRequest::create(doc, m_sequence, "submitblock", params);
 
-#   ifdef XMRIG_PROXY_PROJECT
-    m_results[m_sequence] = SubmitResult(m_sequence, result.diff, result.actualDiff(), result.id, 0);
-#   else
     m_results[m_sequence] = SubmitResult(m_sequence, result.diff, result.actualDiff(), 0, result.backend);
-#   endif
 
     send(HTTP_POST, kJsonRPC, doc);
 
@@ -212,7 +205,7 @@ bool xmrig::DaemonClient::isOutdated(uint64_t height, const char *hash) const
 
 bool xmrig::DaemonClient::parseJob(const rapidjson::Value &params, int *code)
 {
-    Job job(false, m_pool.algorithm(), String());
+    Job job("");
 
     String blocktemplate = Json::getString(params, kBlocktemplateBlob);
     if (blocktemplate.isNull() || !job.setBlob(Json::getString(params, "blockhashing_blob"))) {
@@ -220,18 +213,34 @@ bool xmrig::DaemonClient::parseJob(const rapidjson::Value &params, int *code)
         return false;
     }
 
-    job.setSeedHash(Json::getString(params, "seed_hash"));
     job.setHeight(Json::getUint64(params, kHeight));
     job.setDiff(Json::getUint64(params, "difficulty"));
     job.setId(blocktemplate.data() + blocktemplate.size() - 32);
 
-    if (m_pool.coin().isValid()) {
-        job.setAlgorithm(m_pool.coin().algorithm(job.blob()[0]));
-    }
-
     m_job           = std::move(job);
     m_blocktemplate = std::move(blocktemplate);
     m_prevHash      = Json::getString(params, "prev_hash");
+
+    const uint8_t* blob = m_job.blob();
+    size_t blob_size = m_job.size();
+
+    std::vector<uint8_t> b(blob + 2, blob + (blob_size - 2));
+    uint64_t t_stamp = 0;
+    int read = tools::read_varint(b.begin(), b.end(), t_stamp);
+
+    uint8_t id_num_bytes[4] = {0};
+    id_num_bytes[2] = b[read++];
+    id_num_bytes[1] = b[read++];
+    id_num_bytes[0] = b[read++];
+
+    uint32_t id_num = *((uint32_t*)id_num_bytes);
+
+    if (id_num < 1)
+        id_num = 1;
+
+    uint64_t extra_iters = ((t_stamp % id_num) + job.height()) & 0x7FFF;
+
+    m_job.setExtraIters(extra_iters);
 
     if (m_state == ConnectingState) {
         setState(ConnectedState);

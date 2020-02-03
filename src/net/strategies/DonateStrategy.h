@@ -64,7 +64,6 @@ protected:
 
     int64_t submit(const JobResult &result) override;
     void connect() override;
-    void setAlgo(const Algorithm &algo) override;
     void stop() override;
     void tick(uint64_t now) override;
 
@@ -75,8 +74,6 @@ protected:
     void onLogin(IClient *client, rapidjson::Document &doc, rapidjson::Value &params) override;
     void onLogin(IStrategy *strategy, IClient *client, rapidjson::Document &doc, rapidjson::Value &params) override;
     void onLoginSuccess(IClient *client) override;
-    void onVerifyAlgorithm(const IClient *client, const Algorithm &algorithm, bool *ok) override;
-    void onVerifyAlgorithm(IStrategy *strategy, const  IClient *client, const Algorithm &algorithm, bool *ok) override;
 
     void onTimer(const Timer *timer) override;
 
@@ -93,7 +90,6 @@ private:
 
     IClient *createProxy();
     void idle(double min, double max);
-    void setAlgorithms(rapidjson::Document &doc, rapidjson::Value &params);
     void setJob(IClient *client, const Job &job);
     void setResult(IClient *client, const SubmitResult &result, const char *error);
     void setState(State state);

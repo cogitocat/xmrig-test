@@ -33,12 +33,6 @@
 #include "crypto/common/Nonce.h"
 #include "net/JobResults.h"
 
-
-#ifdef XMRIG_ALGO_RANDOMX
-#   include "backend/cuda/runners/CudaRxRunner.h"
-#endif
-
-
 #include <cassert>
 #include <thread>
 
@@ -60,23 +54,9 @@ static inline uint32_t roundSize(uint32_t intensity) { return kReserveCount / in
 
 xmrig::CudaWorker::CudaWorker(size_t id, const CudaLaunchData &data) :
     Worker(id, data.thread.affinity(), -1),
-    m_algorithm(data.algorithm),
     m_miner(data.miner)
 {
-    switch (m_algorithm.family()) {
-    case Algorithm::RANDOM_X:
-#       ifdef XMRIG_ALGO_RANDOMX
-        m_runner = new CudaRxRunner(id, data);
-#       endif
-        break;
-
-    case Algorithm::ARGON2:
-        break;
-
-    default:
-        m_runner = new CudaCnRunner(id, data);
-        break;
-    }
+    m_runner = new CudaCnRunner(id, data);
 
     if (!m_runner || !m_runner->init()) {
         return;

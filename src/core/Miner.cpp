@@ -40,7 +40,6 @@
 #include "core/Controller.h"
 #include "core/Miner.h"
 #include "crypto/common/Nonce.h"
-#include "crypto/rx/Rx.h"
 #include "rapidjson/document.h"
 #include "version.h"
 
@@ -59,12 +58,6 @@
 #ifdef XMRIG_FEATURE_CUDA
 #   include "backend/cuda/CudaBackend.h"
 #endif
-
-
-#ifdef XMRIG_ALGO_RANDOMX
-#   include "crypto/rx/RxConfig.h"
-#endif
-
 
 namespace xmrig {
 
@@ -88,38 +81,19 @@ public:
         for (IBackend *backend : backends) {
             delete backend;
         }
-
-#       ifdef XMRIG_ALGO_RANDOMX
-        Rx::destroy();
-#       endif
     }
 
 
-    bool isEnabled(const Algorithm &algorithm) const
+    bool isEnabled() const
     {
         for (IBackend *backend : backends) {
-            if (backend->isEnabled() && backend->isEnabled(algorithm)) {
+            if (backend->isEnabled()) {
                 return true;
             }
         }
 
         return false;
     }
-
-
-    inline void rebuild()
-    {
-        algorithms.clear();
-
-        for (int i = 0; i < Algorithm::MAX; ++i) {
-            const Algorithm algo(static_cast<Algorithm::Id>(i));
-
-            if (isEnabled(algo)) {
-                algorithms.push_back(algo);
-            }
-        }
-    }
-
 
     inline void handleJobChange()
     {
@@ -156,16 +130,7 @@ public:
         reply.AddMember("kind",         APP_KIND, allocator);
         reply.AddMember("ua",           StringRef(Platform::userAgent()), allocator);
         reply.AddMember("cpu",          Cpu::toJSON(doc), allocator);
-        reply.AddMember("donate_level", controller->config()->pools().donateLevel(), allocator);
         reply.AddMember("paused",       !enabled, allocator);
-
-        Value algo(kArrayType);
-
-        for (const Algorithm &a : algorithms) {
-            algo.PushBack(StringRef(a.shortName()), allocator);
-        }
-
-        reply.AddMember("algorithms", algo, allocator);
     }
 
 
@@ -209,7 +174,7 @@ public:
         total.PushBack(Hashrate::normalize(t[2]),  allocator);
 
         hashrate.AddMember("total",   total, allocator);
-        hashrate.AddMember("highest", Hashrate::normalize(maxHashrate[algorithm]), allocator);
+        hashrate.AddMember("highest", Hashrate::normalize(maxHashrate), allocator);
 
         if (version == 1) {
             hashrate.AddMember("threads", threads, allocator);
@@ -232,23 +197,12 @@ public:
     }
 #   endif
 
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    inline bool initRX()
-    {
-        return Rx::init(job, controller->config()->rx(), controller->config()->cpu().isHugePages());
-    }
-#   endif
-
-
-    Algorithm algorithm;
-    Algorithms algorithms;
     bool active         = false;
     bool enabled        = true;
     bool reset          = true;
     Controller *controller;
     Job job;
-    mutable std::map<Algorithm::Id, double> maxHashrate;
+    double maxHashrate;
     std::vector<IBackend *> backends;
     String userJobId;
     Timer *timer        = nullptr;
@@ -263,10 +217,6 @@ public:
 xmrig::Miner::Miner(Controller *controller)
     : d_ptr(new MinerPrivate(controller))
 {
-#   ifdef XMRIG_ALGO_RANDOMX
-    Rx::init(this);
-#   endif
-
     controller->addListener(this);
 
 #   ifdef XMRIG_FEATURE_API
@@ -285,8 +235,6 @@ xmrig::Miner::Miner(Controller *controller)
 #   ifdef XMRIG_FEATURE_CUDA
     d_ptr->backends.push_back(new CudaBackend(controller));
 #   endif
-
-    d_ptr->rebuild();
 }
 
 
@@ -304,15 +252,8 @@ bool xmrig::Miner::isEnabled() const
 
 bool xmrig::Miner::isEnabled(const Algorithm &algorithm) const
 {
-    return std::find(d_ptr->algorithms.begin(), d_ptr->algorithms.end(), algorithm) != d_ptr->algorithms.end();
+    return true;
 }
-
-
-const xmrig::Algorithms &xmrig::Miner::algorithms() const
-{
-    return d_ptr->algorithms;
-}
-
 
 const std::vector<xmrig::IBackend *> &xmrig::Miner::backends() const
 {
@@ -385,7 +326,7 @@ void xmrig::Miner::printHashrate(bool details)
              Hashrate::format(speed[0],                                 num,         sizeof(num) / 4),
              Hashrate::format(speed[1],                                 num + 8,     sizeof(num) / 4),
              Hashrate::format(speed[2],                                 num + 8 * 2, sizeof(num) / 4 ),
-             Hashrate::format(d_ptr->maxHashrate[d_ptr->algorithm],     num + 8 * 3, sizeof(num) / 4)
+             Hashrate::format(d_ptr->maxHashrate,     num + 8 * 3, sizeof(num) / 4)
              );
 }
 
@@ -414,23 +355,15 @@ void xmrig::Miner::setEnabled(bool enabled)
 }
 
 
-void xmrig::Miner::setJob(const Job &job, bool donate)
+void xmrig::Miner::setJob(const Job &job)
 {
     for (IBackend *backend : d_ptr->backends) {
         backend->prepare(job);
     }
 
-#   ifdef XMRIG_ALGO_RANDOMX
-    if (job.algorithm().family() == Algorithm::RANDOM_X && !Rx::isReady(job)) {
-        stop();
-    }
-#   endif
-
-    d_ptr->algorithm = job.algorithm();
-
     mutex.lock();
 
-    const uint8_t index = donate ? 1 : 0;
+    const uint8_t index = 0;
 
     d_ptr->reset = !(d_ptr->job.index() == 1 && index == 0 && d_ptr->userJobId == job.id());
     d_ptr->job   = job;
@@ -440,17 +373,8 @@ void xmrig::Miner::setJob(const Job &job, bool donate)
         d_ptr->userJobId = job.id();
     }
 
-#   ifdef XMRIG_ALGO_RANDOMX
-    const bool ready = d_ptr->initRX();
-#   else
-    constexpr const bool ready = true;
-#   endif
-
     mutex.unlock();
-
-    if (ready) {
-        d_ptr->handleJobChange();
-    }
+    d_ptr->handleJobChange();
 }
 
 
@@ -466,8 +390,6 @@ void xmrig::Miner::stop()
 
 void xmrig::Miner::onConfigChanged(Config *config, Config *previousConfig)
 {
-    d_ptr->rebuild();
-
     if (config->pools() != previousConfig->pools() && config->pools().active() > 0) {
         return;
     }
@@ -492,7 +414,7 @@ void xmrig::Miner::onTimer(const Timer *)
         }
     }
 
-    d_ptr->maxHashrate[d_ptr->algorithm] = std::max(d_ptr->maxHashrate[d_ptr->algorithm], maxHashrate);
+    d_ptr->maxHashrate = std::max(d_ptr->maxHashrate, maxHashrate);
 
     auto seconds = d_ptr->controller->config()->printTime();
     if (seconds && (d_ptr->ticks % (seconds * 2)) == 0) {
@@ -540,17 +462,5 @@ void xmrig::Miner::onRequest(IApiRequest &request)
     for (IBackend *backend : d_ptr->backends) {
         backend->handleRequest(request);
     }
-}
-#endif
-
-
-#ifdef XMRIG_ALGO_RANDOMX
-void xmrig::Miner::onDatasetReady()
-{
-    if (!Rx::isReady(job())) {
-        return;
-    }
-
-    d_ptr->handleJobChange();
 }
 #endif

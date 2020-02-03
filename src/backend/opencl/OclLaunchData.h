@@ -48,7 +48,7 @@ class Miner;
 class OclLaunchData
 {
 public:
-    OclLaunchData(const Miner *miner, const Algorithm &algorithm, const OclConfig &config, const OclPlatform &platform, const OclThread &thread, const OclDevice &device, int64_t affinity);
+    OclLaunchData(const Miner *miner, const OclConfig &config, const OclPlatform &platform, const OclThread &thread, const OclDevice &device, int64_t affinity);
 
     bool isEqual(const OclLaunchData &other) const;
 
@@ -60,7 +60,6 @@ public:
     static const char *tag();
 
     cl_context ctx = nullptr;
-    const Algorithm algorithm;
     const bool cache;
     const int64_t affinity;
     const Miner *miner;

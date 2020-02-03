@@ -36,8 +36,6 @@ using nvmlDevice_t  = struct nvmlDevice_st *;
 
 namespace xmrig {
 
-
-class Algorithm;
 class CudaThreads;
 
 
@@ -56,7 +54,7 @@ public:
     uint32_t computeCapability(bool major = true) const;
     uint32_t memoryClock() const;
     uint32_t smx() const;
-    void generate(const Algorithm &algorithm, CudaThreads &threads) const;
+    void generate(CudaThreads &threads) const;
 
     inline bool isValid() const                     { return m_ctx != nullptr; }
     inline const PciTopology &topology() const      { return m_topology; }

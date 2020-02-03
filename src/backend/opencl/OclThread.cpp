@@ -41,12 +41,6 @@ static const char *kThreads      = "threads";
 static const char *kUnroll       = "unroll";
 static const char *kWorksize     = "worksize";
 
-#ifdef XMRIG_ALGO_RANDOMX
-static const char *kBFactor      = "bfactor";
-static const char *kGCNAsm       = "gcn_asm";
-static const char* kDatasetHost  = "dataset_host";
-#endif
-
 } // namespace xmrig
 
 
@@ -85,17 +79,6 @@ xmrig::OclThread::OclThread(const rapidjson::Value &value)
     if (m_threads.empty()) {
         m_threads.emplace_back(-1);
     }
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    const auto &gcnAsm = Json::getValue(value, kGCNAsm);
-    if (gcnAsm.IsBool()) {
-        m_fields.set(RANDOMX_FIELDS, true);
-
-        m_gcnAsm      = gcnAsm.GetBool();
-        m_bfactor     = Json::getUint(value, kBFactor, m_bfactor);
-        m_datasetHost = Json::getBool(value, kDatasetHost, m_datasetHost);
-    }
-#   endif
 }
 
 
@@ -144,11 +127,6 @@ rapidjson::Value xmrig::OclThread::toJSON(rapidjson::Document &doc) const
     out.AddMember(StringRef(kThreads), threads, allocator);
 
     if (m_fields.test(RANDOMX_FIELDS)) {
-#       ifdef XMRIG_ALGO_RANDOMX
-        out.AddMember(StringRef(kBFactor),      bfactor(), allocator);
-        out.AddMember(StringRef(kGCNAsm),       isAsm(), allocator);
-        out.AddMember(StringRef(kDatasetHost),  isDatasetHost(), allocator);
-#       endif
     }
     else {
         out.AddMember(StringRef(kUnroll), unrollFactor(), allocator);

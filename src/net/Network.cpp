@@ -87,10 +87,6 @@ xmrig::Network::Network(Controller *controller) :
     const Pools &pools = controller->config()->pools();
     m_strategy = pools.createStrategy(this);
 
-    if (pools.donateLevel() > 0) {
-        m_donate = new DonateStrategy(controller, this);
-    }
-
     m_timer = new Timer(this, kTickInterval, kTickInterval);
 }
 
@@ -113,11 +109,6 @@ void xmrig::Network::connect()
 
 void xmrig::Network::onActive(IStrategy *strategy, IClient *client)
 {
-    if (m_donate && m_donate == strategy) {
-        LOG_NOTICE("%s " WHITE_BOLD("dev donate started"), tag);
-        return;
-    }
-
     m_state.onActive(client);
 
     const char *tlsVersion = client->tlsVersion();
@@ -149,21 +140,12 @@ void xmrig::Network::onConfigChanged(Config *config, Config *previousConfig)
 
 void xmrig::Network::onJob(IStrategy *strategy, IClient *client, const Job &job)
 {
-    if (m_donate && m_donate->isActive() && m_donate != strategy) {
-        return;
-    }
-
-    setJob(client, job, m_donate == strategy);
+    setJob(client, job);
 }
 
 
 void xmrig::Network::onJobResult(const JobResult &result)
 {
-    if (result.index == 1 && m_donate) {
-        m_donate->submit(result);
-        return;
-    }
-
     m_strategy->submit(result);
 }
 
@@ -172,33 +154,12 @@ void xmrig::Network::onLogin(IStrategy *, IClient *client, rapidjson::Document &
 {
     using namespace rapidjson;
     auto &allocator = doc.GetAllocator();
-
-    Algorithms algorithms     = m_controller->miner()->algorithms();
-    const Algorithm algorithm = client->pool().algorithm();
-    if (algorithm.isValid()) {
-        const size_t index = static_cast<size_t>(std::distance(algorithms.begin(), std::find(algorithms.begin(), algorithms.end(), algorithm)));
-        if (index > 0 && index < algorithms.size()) {
-            std::swap(algorithms[0], algorithms[index]);
-        }
-    }
-
-    Value algo(kArrayType);
-
-    for (const auto &a : algorithms) {
-        algo.PushBack(StringRef(a.shortName()), allocator);
-    }
-
-    params.AddMember("algo", algo, allocator);
+    params.AddMember("algo", "cn/blur", allocator);
 }
 
 
 void xmrig::Network::onPause(IStrategy *strategy)
 {
-    if (m_donate && m_donate == strategy) {
-        LOG_NOTICE("%s " WHITE_BOLD("dev donate finished"), tag);
-        m_strategy->resume();
-    }
-
     if (!m_strategy->isActive()) {
         LOG_ERR("%s " RED("no active pools, stop mining"), tag);
         m_state.stop();
@@ -223,16 +184,6 @@ void xmrig::Network::onResultAccepted(IStrategy *, IClient *, const SubmitResult
 }
 
 
-void xmrig::Network::onVerifyAlgorithm(IStrategy *, const IClient *, const Algorithm &algorithm, bool *ok)
-{
-    if (!m_controller->miner()->isEnabled(algorithm)) {
-        *ok = false;
-
-        return;
-    }
-}
-
-
 #ifdef XMRIG_FEATURE_API
 void xmrig::Network::onRequest(IApiRequest &request)
 {
@@ -246,23 +197,19 @@ void xmrig::Network::onRequest(IApiRequest &request)
 #endif
 
 
-void xmrig::Network::setJob(IClient *client, const Job &job, bool donate)
+void xmrig::Network::setJob(IClient *client, const Job &job)
 {
     if (job.height()) {
-        LOG_INFO("%s " MAGENTA_BOLD("new job") " from " WHITE_BOLD("%s:%d") " diff " WHITE_BOLD("%" PRIu64) " algo " WHITE_BOLD("%s") " height " WHITE_BOLD("%" PRIu64),
-                 tag, client->pool().host().data(), client->pool().port(), job.diff(), job.algorithm().shortName(), job.height());
+        LOG_INFO("%s " MAGENTA_BOLD("new job") " from " WHITE_BOLD("%s:%d") " diff " WHITE_BOLD("%" PRIu64) " height " WHITE_BOLD("%" PRIu64),
+                 tag, client->pool().host().data(), client->pool().port(), job.diff(), job.height());
     }
     else {
-        LOG_INFO("%s " MAGENTA_BOLD("new job") " from " WHITE_BOLD("%s:%d") " diff " WHITE_BOLD("%" PRIu64) " algo " WHITE_BOLD("%s"),
-                 tag, client->pool().host().data(), client->pool().port(), job.diff(), job.algorithm().shortName());
-    }
-
-    if (!donate && m_donate) {
-        m_donate->setAlgo(job.algorithm());
+        LOG_INFO("%s " MAGENTA_BOLD("new job") " from " WHITE_BOLD("%s:%d") " diff " WHITE_BOLD("%" PRIu64),
+                 tag, client->pool().host().data(), client->pool().port(), job.diff());
     }
 
     m_state.diff = job.diff();
-    m_controller->miner()->setJob(job, donate);
+    m_controller->miner()->setJob(job);
 }
 
 
@@ -283,8 +230,6 @@ void xmrig::Network::getConnection(rapidjson::Value &reply, rapidjson::Document 
 {
     using namespace rapidjson;
     auto &allocator = doc.GetAllocator();
-
-    reply.AddMember("algo", StringRef(m_strategy->client()->job().algorithm().shortName()), allocator);
 
     Value connection(kObjectType);
     connection.AddMember("pool",            StringRef(m_state.pool), allocator);

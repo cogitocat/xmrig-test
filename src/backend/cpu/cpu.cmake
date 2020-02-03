@@ -72,9 +72,5 @@ endif()
 
 
 if (NOT WITH_LIBCPUID)
-    if (XMRIG_ARM)
-        set(SOURCES_CPUID ${SOURCES_CPUID} src/backend/cpu/platform/BasicCpuInfo_arm.cpp)
-    else()
-        set(SOURCES_CPUID ${SOURCES_CPUID} src/backend/cpu/platform/BasicCpuInfo.cpp)
-    endif()
+    set(SOURCES_CPUID ${SOURCES_CPUID} src/backend/cpu/platform/BasicCpuInfo.cpp)
 endif()

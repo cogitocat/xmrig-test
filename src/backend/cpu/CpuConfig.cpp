@@ -39,14 +39,6 @@ static const char *kMaxThreadsHint      = "max-threads-hint";
 static const char *kMemoryPool          = "memory-pool";
 static const char *kPriority            = "priority";
 
-#ifdef XMRIG_FEATURE_ASM
-static const char *kAsm = "asm";
-#endif
-
-#ifdef XMRIG_ALGO_ARGON2
-static const char *kArgon2Impl = "argon2-impl";
-#endif
-
 extern template class Threads<CpuThreads>;
 
 }
@@ -75,14 +67,6 @@ rapidjson::Value xmrig::CpuConfig::toJSON(rapidjson::Document &doc) const
         obj.AddMember(StringRef(kMaxThreadsHint), m_limit, allocator);
     }
 
-#   ifdef XMRIG_FEATURE_ASM
-    obj.AddMember(StringRef(kAsm), m_assembly.toJSON(), allocator);
-#   endif
-
-#   ifdef XMRIG_ALGO_ARGON2
-    obj.AddMember(StringRef(kArgon2Impl), m_argon2Impl.toJSON(), allocator);
-#   endif
-
     m_threads.toJSON(obj, doc);
 
     return obj;
@@ -95,10 +79,10 @@ size_t xmrig::CpuConfig::memPoolSize() const
 }
 
 
-std::vector<xmrig::CpuLaunchData> xmrig::CpuConfig::get(const Miner *miner, const Algorithm &algorithm) const
+std::vector<xmrig::CpuLaunchData> xmrig::CpuConfig::get(const Miner *miner) const
 {
     std::vector<CpuLaunchData> out;
-    const CpuThreads &threads = m_threads.get(algorithm);
+    const CpuThreads &threads = m_threads.get();
 
     if (threads.isEmpty()) {
         return out;
@@ -107,7 +91,7 @@ std::vector<xmrig::CpuLaunchData> xmrig::CpuConfig::get(const Miner *miner, cons
     out.reserve(threads.count());
 
     for (const CpuThread &thread : threads.data()) {
-        out.emplace_back(miner, algorithm, *this, thread);
+        out.emplace_back(miner, *this, thread);
     }
 
     return out;
@@ -124,14 +108,6 @@ void xmrig::CpuConfig::read(const rapidjson::Value &value)
         setAesMode(Json::getValue(value, kHwAes));
         setPriority(Json::getInt(value,  kPriority, -1));
         setMemoryPool(Json::getValue(value, kMemoryPool));
-
-#       ifdef XMRIG_FEATURE_ASM
-        m_assembly = Json::getValue(value, kAsm);
-#       endif
-
-#       ifdef XMRIG_ALGO_ARGON2
-        m_argon2Impl = Json::getString(value, kArgon2Impl);
-#       endif
 
         m_threads.read(value);
 
@@ -150,19 +126,13 @@ void xmrig::CpuConfig::read(const rapidjson::Value &value)
 
 void xmrig::CpuConfig::generate()
 {
-    if (!isEnabled() || m_threads.has("*")) {
+    if (!isEnabled() || m_threads.has()) {
         return;
     }
 
     size_t count = 0;
 
-    count += xmrig::generate<Algorithm::CN>(m_threads, m_limit);
-    count += xmrig::generate<Algorithm::CN_LITE>(m_threads, m_limit);
-    count += xmrig::generate<Algorithm::CN_HEAVY>(m_threads, m_limit);
-    count += xmrig::generate<Algorithm::CN_PICO>(m_threads, m_limit);
-    count += xmrig::generate<Algorithm::RANDOM_X>(m_threads, m_limit);
-    count += xmrig::generate<Algorithm::ARGON2>(m_threads, m_limit);
-
+    count += xmrig::generate(m_threads, m_limit);
     m_shouldSave = count > 0;
 }
 

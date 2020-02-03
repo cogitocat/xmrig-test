@@ -168,14 +168,6 @@ public:
 
     inline void start(const Job &job)
     {
-        LOG_INFO("%s use profile " BLUE_BG(WHITE_BOLD_S " %s ") WHITE_BOLD_S " (" CYAN_BOLD("%zu") WHITE_BOLD(" thread%s)") " scratchpad " CYAN_BOLD("%zu KB"),
-                 tag,
-                 profileName.data(),
-                 threads.size(),
-                 threads.size() > 1 ? "s" : "",
-                 algo.l3() / 1024
-                 );
-
         Log::print(WHITE_BOLD("|  # | GPU |  BUS ID |    I |  W | SI | MC |  U |  MEM | NAME"));
 
         size_t i = 0;
@@ -190,7 +182,7 @@ public:
                        data.thread.stridedIndex(),
                        data.thread.stridedIndex() == 2 ? std::to_string(data.thread.memChunk()).c_str() : "-",
                        data.thread.unrollFactor(),
-                       data.thread.intensity() * algo.l3() / oneMiB,
+                       data.thread.intensity(),
                        data.device.printableName().data()
                        );
 
@@ -203,15 +195,12 @@ public:
         workers.start(threads);
     }
 
-
-    Algorithm algo;
     Controller *controller;
     OclContext context;
     OclLaunchStatus status;
     OclPlatform platform;
     std::vector<OclDevice> devices;
     std::vector<OclLaunchData> threads;
-    String profileName;
     Workers<OclLaunchData> workers;
 };
 
@@ -248,7 +237,7 @@ bool xmrig::OclBackend::isEnabled() const
 
 bool xmrig::OclBackend::isEnabled(const Algorithm &algorithm) const
 {
-    return !d_ptr->controller->config()->cl().threads().get(algorithm).isEmpty();
+    return !d_ptr->controller->config()->cl().threads().get().isEmpty();
 }
 
 
@@ -256,13 +245,6 @@ const xmrig::Hashrate *xmrig::OclBackend::hashrate() const
 {
     return d_ptr->workers.hashrate();
 }
-
-
-const xmrig::String &xmrig::OclBackend::profileName() const
-{
-    return d_ptr->profileName;
-}
-
 
 const xmrig::String &xmrig::OclBackend::type() const
 {
@@ -320,15 +302,12 @@ void xmrig::OclBackend::setJob(const Job &job)
         return stop();
     }
 
-    auto threads = cl.get(d_ptr->controller->miner(), job.algorithm(), d_ptr->platform, d_ptr->devices);
+    auto threads = cl.get(d_ptr->controller->miner(), d_ptr->platform, d_ptr->devices);
     if (!d_ptr->threads.empty() && d_ptr->threads.size() == threads.size() && std::equal(d_ptr->threads.begin(), d_ptr->threads.end(), threads.begin())) {
         return;
     }
 
-    d_ptr->algo         = job.algorithm();
-    d_ptr->profileName  = cl.threads().profileName(job.algorithm());
-
-    if (d_ptr->profileName.isNull() || threads.empty()) {
+    if (threads.empty()) {
         LOG_WARN("%s " RED_BOLD("disabled") YELLOW(" (no suitable configuration found)"), tag);
 
         return stop();
@@ -397,8 +376,6 @@ rapidjson::Value xmrig::OclBackend::toJSON(rapidjson::Document &doc) const
     Value out(kObjectType);
     out.AddMember("type",       type().toJSON(), allocator);
     out.AddMember("enabled",    isEnabled(), allocator);
-    out.AddMember("algo",       d_ptr->algo.toJSON(), allocator);
-    out.AddMember("profile",    profileName().toJSON(), allocator);
     out.AddMember("platform",   d_ptr->platform.toJSON(doc), allocator);
 
     if (d_ptr->threads.empty() || !hashrate()) {

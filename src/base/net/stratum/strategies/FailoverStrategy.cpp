@@ -100,14 +100,6 @@ void xmrig::FailoverStrategy::resume()
 }
 
 
-void xmrig::FailoverStrategy::setAlgo(const Algorithm &algo)
-{
-    for (IClient *client : m_pools) {
-        client->setAlgo(algo);
-    }
-}
-
-
 void xmrig::FailoverStrategy::stop()
 {
     for (auto &pool : m_pools) {
@@ -188,10 +180,4 @@ void xmrig::FailoverStrategy::onLoginSuccess(IClient *client)
 void xmrig::FailoverStrategy::onResultAccepted(IClient *client, const SubmitResult &result, const char *error)
 {
     m_listener->onResultAccepted(this, client, result, error);
-}
-
-
-void xmrig::FailoverStrategy::onVerifyAlgorithm(const IClient *client, const Algorithm &algorithm, bool *ok)
-{
-    m_listener->onVerifyAlgorithm(this, client, algorithm, ok);
 }

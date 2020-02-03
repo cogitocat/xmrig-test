@@ -39,10 +39,6 @@ static const char *kEnabled     = "enabled";
 static const char *kIntensity   = "intensity";
 static const char *kThreads     = "threads";
 
-#ifdef XMRIG_ALGO_RANDOMX
-static const char *kRandomX     = "randomx";
-#endif
-
 #ifdef XMRIG_FEATURE_OPENCL
 static const char *kOcl         = "opencl";
 #endif
@@ -148,19 +144,6 @@ void xmrig::ConfigTransform::transform(rapidjson::Document &doc, int key, const 
     case IConfig::MemoryPoolKey: /* --cpu-memory-pool */
         return set(doc, kCpu, "memory-pool", static_cast<int64_t>(strtol(arg, nullptr, 10)));
         break;
-
-#   ifdef XMRIG_FEATURE_ASM
-    case IConfig::AssemblyKey: /* --asm */
-        return set(doc, kCpu, "asm", arg);
-#   endif
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    case IConfig::RandomXInitKey: /* --randomx-init */
-        return set(doc, kRandomX, "init", static_cast<int64_t>(strtol(arg, nullptr, 10)));
-
-    case IConfig::RandomXNumaKey: /* --randomx-no-numa */
-        return set(doc, kRandomX, "numa", false);
-#   endif
 
 #   ifdef XMRIG_FEATURE_OPENCL
     case IConfig::OclKey: /* --opencl */

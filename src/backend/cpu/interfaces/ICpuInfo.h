@@ -50,7 +50,7 @@ public:
     virtual bool hasAVX2() const                                                    = 0;
     virtual const char *backend() const                                             = 0;
     virtual const char *brand() const                                               = 0;
-    virtual CpuThreads threads(const Algorithm &algorithm, uint32_t limit) const    = 0;
+    virtual CpuThreads threads(uint32_t limit) const    = 0;
     virtual size_t cores() const                                                    = 0;
     virtual size_t L2() const                                                       = 0;
     virtual size_t L3() const                                                       = 0;

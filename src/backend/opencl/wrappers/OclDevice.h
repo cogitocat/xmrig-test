@@ -30,9 +30,7 @@
 #include "backend/opencl/wrappers/OclVendor.h"
 #include "base/tools/String.h"
 
-#include <algorithm>
 #include <vector>
-
 
 using cl_device_id      = struct _cl_device_id *;
 using cl_platform_id    = struct _cl_platform_id *;
@@ -40,8 +38,6 @@ using cl_platform_id    = struct _cl_platform_id *;
 
 namespace xmrig {
 
-
-class Algorithm;
 class OclThreads;
 
 
@@ -64,7 +60,7 @@ public:
 
     String printableName() const;
     uint32_t clock() const;
-    void generate(const Algorithm &algorithm, OclThreads &threads) const;
+    void generate(OclThreads &threads) const;
 
     inline bool isValid() const                 { return m_id != nullptr && m_platform != nullptr; }
     inline cl_device_id id() const              { return m_id; }

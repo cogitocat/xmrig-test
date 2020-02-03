@@ -54,7 +54,6 @@ protected:
     int64_t submit(const JobResult &result) override;
     void connect() override;
     void resume() override;
-    void setAlgo(const Algorithm &algo) override;
     void stop() override;
     void tick(uint64_t now) override;
 
@@ -63,7 +62,6 @@ protected:
     void onLogin(IClient *client, rapidjson::Document &doc, rapidjson::Value &params) override;
     void onLoginSuccess(IClient *client) override;
     void onResultAccepted(IClient *client, const SubmitResult &result, const char *error) override;
-    void onVerifyAlgorithm(const IClient *client, const Algorithm &algorithm, bool *ok) override;
 
 private:
     bool m_active;

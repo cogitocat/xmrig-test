@@ -57,8 +57,6 @@ static const char *kInit                                = "init";
 static const char *kLastError                           = "lastError";
 static const char *kPluginVersion                       = "pluginVersion";
 static const char *kRelease                             = "release";
-static const char *kRxHash                              = "rxHash";
-static const char *kRxPrepare                           = "rxPrepare";
 static const char *kSetJob                              = "setJob";
 static const char *kSymbolNotFound                      = "symbol not found";
 static const char *kVersion                             = "version";
@@ -67,7 +65,7 @@ static const char *kVersion                             = "version";
 using alloc_t                                           = nvid_ctx * (*)(uint32_t, int32_t, int32_t);
 using cnHash_t                                          = bool (*)(nvid_ctx *, uint32_t, uint64_t, uint64_t, uint32_t *, uint32_t *);
 using deviceCount_t                                     = uint32_t (*)();
-using deviceInfo_t                                      = int32_t (*)(nvid_ctx *, int32_t, int32_t, int32_t, int32_t);
+using deviceInfo_t                                      = int32_t (*)(nvid_ctx *, int32_t, int32_t);
 using deviceInit_t                                      = bool (*)(nvid_ctx *);
 using deviceInt_t                                       = int32_t (*)(nvid_ctx *, CudaLib::DeviceProperty);
 using deviceName_t                                      = const char * (*)(nvid_ctx *);
@@ -77,9 +75,7 @@ using init_t                                            = void (*)();
 using lastError_t                                       = const char * (*)(nvid_ctx *);
 using pluginVersion_t                                   = const char * (*)();
 using release_t                                         = void (*)(nvid_ctx *);
-using rxHash_t                                          = bool (*)(nvid_ctx *, uint32_t, uint64_t, uint32_t *, uint32_t *);
-using rxPrepare_t                                       = bool (*)(nvid_ctx *, const void *, size_t, bool, uint32_t);
-using setJob_t                                          = bool (*)(nvid_ctx *, const void *, size_t, int32_t);
+using setJob_t                                          = bool (*)(nvid_ctx *, const void *, size_t, uint64_t);
 using version_t                                         = uint32_t (*)(Version);
 
 
@@ -96,8 +92,6 @@ static init_t pInit                                     = nullptr;
 static lastError_t pLastError                           = nullptr;
 static pluginVersion_t pPluginVersion                   = nullptr;
 static release_t pRelease                               = nullptr;
-static rxHash_t pRxHash                                 = nullptr;
-static rxPrepare_t pRxPrepare                           = nullptr;
 static setJob_t pSetJob                                 = nullptr;
 static version_t pVersion                               = nullptr;
 
@@ -148,22 +142,9 @@ bool xmrig::CudaLib::deviceInit(nvid_ctx *ctx) noexcept
     return pDeviceInit(ctx);
 }
 
-
-bool xmrig::CudaLib::rxHash(nvid_ctx *ctx, uint32_t startNonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce) noexcept
+bool xmrig::CudaLib::setJob(nvid_ctx *ctx, const void *data, size_t size, uint64_t extra_iters) noexcept
 {
-    return pRxHash(ctx, startNonce, target, rescount, resnonce);
-}
-
-
-bool xmrig::CudaLib::rxPrepare(nvid_ctx *ctx, const void *dataset, size_t datasetSize, bool dataset_host, uint32_t batchSize) noexcept
-{
-    return pRxPrepare(ctx, dataset, datasetSize, dataset_host, batchSize);
-}
-
-
-bool xmrig::CudaLib::setJob(nvid_ctx *ctx, const void *data, size_t size, const Algorithm &algorithm) noexcept
-{
-    return pSetJob(ctx, data, size, algorithm);
+    return pSetJob(ctx, data, size, extra_iters);
 }
 
 
@@ -185,9 +166,9 @@ const char *xmrig::CudaLib::pluginVersion() noexcept
 }
 
 
-int xmrig::CudaLib::deviceInfo(nvid_ctx *ctx, int32_t blocks, int32_t threads, const Algorithm &algorithm, int32_t dataset_host) noexcept
+int xmrig::CudaLib::deviceInfo(nvid_ctx *ctx, int32_t blocks, int32_t threads) noexcept
 {
-    return pDeviceInfo(ctx, blocks, threads, algorithm, dataset_host);
+    return pDeviceInfo(ctx, blocks, threads);
 }
 
 
@@ -304,8 +285,6 @@ bool xmrig::CudaLib::load()
         DLSYM(LastError);
         DLSYM(PluginVersion);
         DLSYM(Release);
-        DLSYM(RxHash);
-        DLSYM(RxPrepare);
         DLSYM(SetJob);
         DLSYM(Version);
     } catch (std::exception &ex) {

@@ -44,7 +44,7 @@ class Miner;
 class CpuLaunchData
 {
 public:
-    CpuLaunchData(const Miner *miner, const Algorithm &algorithm, const CpuConfig &config, const CpuThread &thread);
+    CpuLaunchData(const Miner *miner, const CpuConfig &config, const CpuThread &thread);
 
     bool isEqual(const CpuLaunchData &other) const;
     CnHash::AlgoVariant av() const;
@@ -56,7 +56,6 @@ public:
 
     static const char *tag();
 
-    const Algorithm algorithm;
     const Assembly assembly;
     const bool hugePages;
     const bool hwAES;

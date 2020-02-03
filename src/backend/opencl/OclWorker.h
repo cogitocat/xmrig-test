@@ -60,7 +60,6 @@ private:
     bool consumeJob();
     void storeStats(uint64_t ts);
 
-    const Algorithm m_algorithm;
     const Miner *m_miner;
     const uint32_t m_intensity;
     IOclRunner *m_runner = nullptr;

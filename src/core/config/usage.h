@@ -69,7 +69,6 @@ static inline const std::string &usage()
     u += "  -R, --retry-pause=N           time to pause between retries (default: 5)\n";
     u += "      --user-agent              set custom user-agent string for pool\n";
     u += "      --donate-level=N          donate level, default 5%% (5 minutes in 100 minutes)\n";
-    u += "      --donate-over-proxy=N     control donate over xmrig-proxy feature\n";
 
     u += "\nCPU backend:\n";
 
@@ -82,11 +81,6 @@ static inline const std::string &usage()
     u += "      --cpu-memory-pool=N       number of 2 MB pages for persistent memory pool, -1 (auto), 0 (disable)\n";
     u += "      --no-huge-pages           disable huge pages support\n";
     u += "      --asm=ASM                 ASM optimizations, possible values: auto, none, intel, ryzen, bulldozer\n";
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    u += "      --randomx-init=N          threads count to initialize RandomX dataset\n";
-    u += "      --randomx-no-numa         disable NUMA support for RandomX\n";
-#   endif
 
 #   ifdef XMRIG_FEATURE_HTTP
     u += "\nAPI:\n";

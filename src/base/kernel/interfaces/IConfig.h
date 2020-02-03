@@ -42,8 +42,6 @@ class IConfig
 public:
     enum Keys {
         // common
-        AlgorithmKey         = 'a',
-        CoinKey              = 1025,
         ApiWorkerIdKey       = 4002,
         ApiIdKey             = 4005,
         HttpPort             = 4100,
@@ -69,14 +67,12 @@ public:
         VerboseKey           = 1100,
         TlsKey               = 1013,
         FingerprintKey       = 1014,
-        ProxyDonateKey       = 1017,
         DaemonKey            = 1018,
         DaemonPollKey        = 1019,
         SelfSelectKey        = 1028,
 
         // xmrig common
         CPUPriorityKey       = 1021,
-        NicehashKey          = 1006,
         PrintTimeKey         = 1007,
 
         // xmrig cpu
@@ -87,8 +83,6 @@ public:
         HugePagesKey         = 1009,
         ThreadsKey           = 't',
         AssemblyKey          = 1015,
-        RandomXInitKey       = 1022,
-        RandomXNumaKey       = 1023,
         CPUMaxThreadsKey     = 1026,
         MemoryPoolKey        = 1027,
 

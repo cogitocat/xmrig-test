@@ -43,19 +43,11 @@ class IStrategyListener;
 class Pools
 {
 public:
-    enum ProxyDonate {
-        PROXY_DONATE_NONE,
-        PROXY_DONATE_AUTO,
-        PROXY_DONATE_ALWAYS
-    };
-
     Pools();
 
     inline const std::vector<Pool> &data() const        { return m_data; }
-    inline int donateLevel() const                      { return m_donateLevel; }
     inline int retries() const                          { return m_retries; }
     inline int retryPause() const                       { return m_retryPause; }
-    inline ProxyDonate proxyDonate() const              { return m_proxyDonate; }
 
     inline bool operator!=(const Pools &other) const    { return !isEqual(other); }
     inline bool operator==(const Pools &other) const    { return isEqual(other); }
@@ -68,15 +60,12 @@ public:
     void print() const;
 
 private:
-    void setDonateLevel(int level);
     void setProxyDonate(int value);
     void setRetries(int retries);
     void setRetryPause(int retryPause);
 
-    int m_donateLevel;
     int m_retries;
     int m_retryPause;
-    ProxyDonate m_proxyDonate;
     std::vector<Pool> m_data;
 };
 

@@ -22,10 +22,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include <algorithm>
-
-
 #include "backend/opencl/OclThreads.h"
 #include "base/io/json/Json.h"
 #include "rapidjson/document.h"
@@ -44,10 +40,10 @@ xmrig::OclThreads::OclThreads(const rapidjson::Value &value)
 }
 
 
-xmrig::OclThreads::OclThreads(const std::vector<OclDevice> &devices, const Algorithm &algorithm)
+xmrig::OclThreads::OclThreads(const std::vector<OclDevice> &devices)
 {
     for (const auto &device : devices) {
-        device.generate(algorithm, *this);
+        device.generate(*this);
     }
 }
 

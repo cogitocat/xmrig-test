@@ -27,11 +27,6 @@
 #include "backend/opencl/OclThreads.h"
 #include "backend/opencl/wrappers/OclDevice.h"
 #include "crypto/cn/CnAlgo.h"
-#include "crypto/common/Algorithm.h"
-
-
-#include <algorithm>
-
 
 namespace xmrig {
 
@@ -39,20 +34,19 @@ namespace xmrig {
 constexpr const size_t oneMiB = 1024u * 1024u;
 
 
-static inline bool isMatch(const OclDevice &device, const Algorithm &algorithm)
+static inline bool isMatch(const OclDevice &device)
 {
-    return algorithm.isCN() &&
-           device.vendorId() == OCL_VENDOR_AMD &&
+    return device.vendorId() == OCL_VENDOR_AMD &&
            (device.type() == OclDevice::Vega_10 || device.type() == OclDevice::Vega_20);
 }
 
 
-static inline uint32_t getMaxThreads(const OclDevice &device, const Algorithm &algorithm)
+static inline uint32_t getMaxThreads(const OclDevice &device)
 {
-    const uint32_t ratio = (algorithm.l3() <= oneMiB) ? 2u : 1u;
+    const uint32_t ratio = 2u;
 
     if (device.type() == OclDevice::Vega_10) {
-        if (device.computeUnits() == 56 && algorithm.family() == Algorithm::CN && CnAlgo<>::base(algorithm) == Algorithm::CN_2) {
+        if (device.computeUnits() == 56) {
             return 1792u;
         }
     }
@@ -61,72 +55,48 @@ static inline uint32_t getMaxThreads(const OclDevice &device, const Algorithm &a
 }
 
 
-static inline uint32_t getPossibleIntensity(const OclDevice &device, const Algorithm &algorithm)
+static inline uint32_t getPossibleIntensity(const OclDevice &device)
 {
-    const uint32_t maxThreads   = getMaxThreads(device, algorithm);
+    const uint32_t maxThreads   = getMaxThreads(device);
     const size_t availableMem   = device.freeMemSize() - (128u * oneMiB);
-    const size_t perThread      = algorithm.l3() + 224u;
+    const size_t perThread      = CnAlgo::CN_MEMORY + 224u;
     const auto maxIntensity     = static_cast<uint32_t>(availableMem / perThread);
 
     return std::min<uint32_t>(maxThreads, maxIntensity);
 }
 
 
-static inline uint32_t getIntensity(const OclDevice &device, const Algorithm &algorithm)
+static inline uint32_t getIntensity(const OclDevice &device)
 {
-    const uint32_t maxIntensity = getPossibleIntensity(device, algorithm);
-
-    if (device.type() == OclDevice::Vega_10) {
-        if (algorithm.family() == Algorithm::CN_HEAVY && device.computeUnits() == 64 && maxIntensity > 976) {
-            return 976;
-        }
-    }
-
+    const uint32_t maxIntensity = getPossibleIntensity(device);
     return maxIntensity / device.computeUnits() * device.computeUnits();
 }
 
 
-static inline uint32_t getWorksize(const Algorithm &algorithm)
+static inline uint32_t getWorksize() { return 16; }
+
+
+static uint32_t getStridedIndex() { return 2; }
+
+
+static inline uint32_t getMemChunk() { return 1; }
+
+
+bool ocl_vega_cn_generator(const OclDevice &device, OclThreads &threads)
 {
-    if (algorithm.family() == Algorithm::CN_PICO) {
-        return 64;
-    }
-
-    if (CnAlgo<>::base(algorithm) == Algorithm::CN_2) {
-        return 16;
-    }
-
-    return 8;
-}
-
-
-static uint32_t getStridedIndex(const Algorithm &algorithm)
-{
-    return CnAlgo<>::base(algorithm) == Algorithm::CN_2 ? 2 : 1;
-}
-
-
-static inline uint32_t getMemChunk(const Algorithm &algorithm)
-{
-    return CnAlgo<>::base(algorithm) == Algorithm::CN_2 ? 1 : 2;
-}
-
-
-bool ocl_vega_cn_generator(const OclDevice &device, const Algorithm &algorithm, OclThreads &threads)
-{
-    if (!isMatch(device, algorithm)) {
+    if (!isMatch(device)) {
         return false;
     }
 
-    const uint32_t intensity = getIntensity(device, algorithm);
+    const uint32_t intensity = getIntensity(device);
     if (intensity == 0) {
         return false;
     }
 
-    const uint32_t worksize = getWorksize(algorithm);
-    const uint32_t memChunk = getMemChunk(algorithm);
+    const uint32_t worksize = getWorksize();
+    const uint32_t memChunk = getMemChunk();
 
-    threads.add(OclThread(device.index(), intensity, worksize, getStridedIndex(algorithm), memChunk, 2, 8));
+    threads.add(OclThread(device.index(), intensity, worksize, getStridedIndex(), memChunk, 2, 8));
 
     return true;
 }

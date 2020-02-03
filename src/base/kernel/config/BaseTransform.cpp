@@ -45,9 +45,7 @@
 namespace xmrig
 {
 
-static const char *kAlgo  = "algo";
 static const char *kApi   = "api";
-static const char *kCoin  = "coin";
 static const char *kHttp  = "http";
 static const char *kPools = "pools";
 
@@ -93,25 +91,6 @@ void xmrig::BaseTransform::load(JsonChain &chain, Process *process, IConfigTrans
 void xmrig::BaseTransform::finalize(rapidjson::Document &doc)
 {
     using namespace rapidjson;
-    auto &allocator = doc.GetAllocator();
-
-    if (m_algorithm.isValid() && doc.HasMember(kPools)) {
-        auto &pools = doc[kPools];
-        for (Value &pool : pools.GetArray()) {
-            if (!pool.HasMember(kAlgo)) {
-                pool.AddMember(StringRef(kAlgo), m_algorithm.toJSON(), allocator);
-            }
-        }
-    }
-
-    if (m_coin.isValid() && doc.HasMember(kPools)) {
-        auto &pools = doc[kPools];
-        for (Value &pool : pools.GetArray()) {
-            if (!pool.HasMember(kCoin)) {
-                pool.AddMember(StringRef(kCoin), m_coin.toJSON(), allocator);
-            }
-        }
-    }
 
     if (m_http) {
         set(doc, kHttp, "enabled", true);
@@ -122,24 +101,6 @@ void xmrig::BaseTransform::finalize(rapidjson::Document &doc)
 void xmrig::BaseTransform::transform(rapidjson::Document &doc, int key, const char *arg)
 {
     switch (key) {
-    case IConfig::AlgorithmKey: /* --algo */
-        if (!doc.HasMember(kPools)) {
-            m_algorithm = arg;
-        }
-        else {
-            return add(doc, kPools, kAlgo, arg);
-        }
-        break;
-
-    case IConfig::CoinKey: /* --coin */
-        if (!doc.HasMember(kPools)) {
-            m_coin = arg;
-        }
-        else {
-            return add(doc, kPools, kCoin, arg);
-        }
-        break;
-
     case IConfig::UserpassKey: /* --userpass */
         {
             const char *p = strrchr(arg, ':');
@@ -217,7 +178,6 @@ void xmrig::BaseTransform::transform(rapidjson::Document &doc, int key, const ch
     case IConfig::BackgroundKey:  /* --background */
     case IConfig::SyslogKey:      /* --syslog */
     case IConfig::KeepAliveKey:   /* --keepalive */
-    case IConfig::NicehashKey:    /* --nicehash */
     case IConfig::TlsKey:         /* --tls */
     case IConfig::DryRunKey:      /* --dry-run */
     case IConfig::HttpEnabledKey: /* --http-enabled */
@@ -254,11 +214,6 @@ void xmrig::BaseTransform::transformBoolean(rapidjson::Document &doc, int key, b
         return add(doc, kPools, "daemon", enable);
 #   endif
 
-#   ifndef XMRIG_PROXY_PROJECT
-    case IConfig::NicehashKey: /* --nicehash */
-        return add<bool>(doc, kPools, "nicehash", enable);
-#   endif
-
     case IConfig::ColorKey: /* --no-color */
         return set(doc, "colors", enable);
 
@@ -290,9 +245,6 @@ void xmrig::BaseTransform::transformUint64(rapidjson::Document &doc, int key, ui
 
     case IConfig::DonateLevelKey: /* --donate-level */
         return set(doc, "donate-level", arg);
-
-    case IConfig::ProxyDonateKey: /* --donate-over-proxy */
-        return set(doc, "donate-over-proxy", arg);
 
     case IConfig::HttpPort: /* --http-port */
         m_http = true;

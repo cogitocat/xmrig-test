@@ -40,7 +40,7 @@ public:
     CudaConfig() = default;
 
     rapidjson::Value toJSON(rapidjson::Document &doc) const;
-    std::vector<CudaLaunchData> get(const Miner *miner, const Algorithm &algorithm, const std::vector<CudaDevice> &devices) const;
+    std::vector<CudaLaunchData> get(const Miner *miner, const std::vector<CudaDevice> &devices) const;
     void read(const rapidjson::Value &value);
 
     inline bool isEnabled() const                               { return m_enabled; }

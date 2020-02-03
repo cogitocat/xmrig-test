@@ -35,7 +35,7 @@ class Algorithm;
 class OclSource
 {
 public:
-    static const char *get(const Algorithm &algorithm);
+    static const char *get();
     static void init();
 };
 

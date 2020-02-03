@@ -27,7 +27,6 @@
 #include "backend/cuda/CudaThreads.h"
 #include "backend/cuda/wrappers/CudaLib.h"
 #include "base/io/log/Log.h"
-#include "crypto/common/Algorithm.h"
 #include "rapidjson/document.h"
 
 #ifdef XMRIG_FEATURE_NVML
@@ -41,7 +40,7 @@ xmrig::CudaDevice::CudaDevice(uint32_t index, int32_t bfactor, int32_t bsleep) :
     m_index(index)
 {
     auto ctx = CudaLib::alloc(index, bfactor, bsleep);
-    if (CudaLib::deviceInfo(ctx, 0, 0, Algorithm::INVALID) != 0) {
+    if (CudaLib::deviceInfo(ctx, 0, 0) != 0) {
         CudaLib::release(ctx);
 
         return;
@@ -105,9 +104,9 @@ uint32_t xmrig::CudaDevice::smx() const
 }
 
 
-void xmrig::CudaDevice::generate(const Algorithm &algorithm, CudaThreads &threads) const
+void xmrig::CudaDevice::generate(CudaThreads &threads) const
 {
-    if (CudaLib::deviceInfo(m_ctx, -1, -1, algorithm) != 0) {
+    if (CudaLib::deviceInfo(m_ctx, -1, -1) != 0) {
         return;
     }
 

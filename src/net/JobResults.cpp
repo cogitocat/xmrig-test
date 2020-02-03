@@ -30,14 +30,7 @@
 #include "base/tools/Object.h"
 #include "net/interfaces/IJobResultListener.h"
 #include "net/JobResult.h"
-
-
-#ifdef XMRIG_ALGO_RANDOMX
-#   include "crypto/randomx/randomx.h"
-#   include "crypto/rx/Rx.h"
-#   include "crypto/rx/RxVm.h"
-#endif
-
+#include "backend/common/VarInt.h"
 
 #if defined(XMRIG_FEATURE_OPENCL) || defined(XMRIG_FEATURE_CUDA)
 #   include "base/tools/Baton.h"
@@ -45,6 +38,7 @@
 #   include "crypto/cn/CnHash.h"
 #   include "crypto/cn/CryptoNight.h"
 #   include "crypto/common/VirtualMemory.h"
+#   include "crypto/cn/CnAlgo.h"
 #endif
 
 
@@ -92,6 +86,7 @@ public:
 
 static inline void checkHash(const JobBundle &bundle, std::vector<JobResult> &results, uint32_t nonce, uint8_t hash[32], uint32_t &errors)
 {
+    
     if (*reinterpret_cast<uint64_t*>(hash + 24) < bundle.job.target()) {
         results.emplace_back(bundle.job, nonce, hash);
     }
@@ -104,46 +99,17 @@ static inline void checkHash(const JobBundle &bundle, std::vector<JobResult> &re
 
 static void getResults(JobBundle &bundle, std::vector<JobResult> &results, uint32_t &errors, bool hwAES)
 {
-    const auto &algorithm = bundle.job.algorithm();
-    auto memory           = new VirtualMemory(algorithm.l3(), false, false);
+    auto memory           = new VirtualMemory(CnAlgo::CN_MEMORY, false, false);
     uint8_t hash[32]{ 0 };
 
-    if (algorithm.family() == Algorithm::RANDOM_X) {
-#       ifdef XMRIG_ALGO_RANDOMX
-        RxDataset *dataset = Rx::dataset(bundle.job, 0);
-        if (dataset == nullptr) {
-            errors += bundle.nonces.size();
+    cryptonight_ctx *ctx[1];
+    CnCtx::create(ctx, memory->scratchpad(), memory->size(), 1);
 
-            return;
-        }
+    for (uint32_t nonce : bundle.nonces) {
+        *bundle.job.nonce() = nonce;
 
-        auto vm = new RxVm(dataset, memory->scratchpad(), !hwAES);
-
-        for (uint32_t nonce : bundle.nonces) {
-            *bundle.job.nonce() = nonce;
-
-            randomx_calculate_hash(vm->get(), bundle.job.blob(), bundle.job.size(), hash);
-
-            checkHash(bundle, results, nonce, hash, errors);
-        }
-
-        delete vm;
-#       endif
-    }
-    else if (algorithm.family() == Algorithm::ARGON2) {
-        errors += bundle.nonces.size(); // TODO ARGON2
-    }
-    else {
-        cryptonight_ctx *ctx[1];
-        CnCtx::create(ctx, memory->scratchpad(), memory->size(), 1);
-
-        for (uint32_t nonce : bundle.nonces) {
-            *bundle.job.nonce() = nonce;
-
-            CnHash::fn(algorithm, hwAES ? CnHash::AV_SINGLE : CnHash::AV_SINGLE_SOFT, Assembly::NONE)(bundle.job.blob(), bundle.job.size(), hash, ctx, bundle.job.height());
-
-            checkHash(bundle, results, nonce, hash, errors);
-        }
+        CnHash::fn(hwAES ? CnHash::AV_SINGLE : CnHash::AV_SINGLE_SOFT, Assembly::NONE)(bundle.job.blob(), bundle.job.size(), hash, ctx, bundle.job.height(), bundle.job.extraIters());
+        checkHash(bundle, results, nonce, hash, errors);
     }
 
     delete memory;

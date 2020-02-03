@@ -63,10 +63,6 @@ public:
     const CudaConfig &cuda() const;
 #   endif
 
-#   ifdef XMRIG_ALGO_RANDOMX
-    const RxConfig &rx() const;
-#   endif
-
 #   if defined(XMRIG_FEATURE_NVML)
     uint32_t healthPrintTime() const;
 #   endif
