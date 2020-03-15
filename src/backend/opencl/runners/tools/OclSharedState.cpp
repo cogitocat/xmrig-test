@@ -64,11 +64,5 @@ void xmrig::OclSharedState::start(const std::vector<OclLaunchData> &threads, con
         auto &sharedData = map[data.device.index()];
 
         ++sharedData;
-
-#       ifdef XMRIG_ALGO_RANDOMX
-        if (data.algorithm.family() == Algorithm::RANDOM_X) {
-            sharedData.createDataset(data.ctx, job, data.thread.isDatasetHost());
-        }
-#       endif
     }
 }

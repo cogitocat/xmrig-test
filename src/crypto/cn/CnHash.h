@@ -41,7 +41,7 @@ struct cryptonight_ctx;
 namespace xmrig
 {
 
-using cn_hash_fun     = void (*)(const uint8_t *, size_t, uint8_t *, cryptonight_ctx **, uint64_t);
+using cn_hash_fun     = void (*)(const uint8_t *, size_t, uint8_t *, cryptonight_ctx **, uint64_t, uint64_t);
 using cn_mainloop_fun = void (*)(cryptonight_ctx **);
 
 
@@ -65,10 +65,10 @@ public:
 
     CnHash();
 
-    static cn_hash_fun fn(const Algorithm &algorithm, AlgoVariant av, Assembly::Id assembly);
+    static cn_hash_fun fn(AlgoVariant av, Assembly::Id assembly);
 
 private:
-    cn_hash_fun m_map[Algorithm::MAX][AV_MAX][Assembly::MAX] = {};
+    cn_hash_fun m_map[AV_MAX][Assembly::MAX] = {};
 };
 
 

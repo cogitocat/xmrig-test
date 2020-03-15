@@ -47,7 +47,6 @@ public:
     virtual int64_t submit(const JobResult &result)    = 0;
     virtual void connect()                             = 0;
     virtual void resume()                              = 0;
-    virtual void setAlgo(const Algorithm &algo)        = 0;
     virtual void stop()                                = 0;
     virtual void tick(uint64_t now)                    = 0;
 };

@@ -47,14 +47,11 @@
 
 namespace xmrig {
 
-static const char *kAlgo                   = "algo";
-static const char *kCoin                   = "coin";
 static const char *kDaemon                 = "daemon";
 static const char *kDaemonPollInterval     = "daemon-poll-interval";
 static const char *kEnabled                = "enabled";
 static const char *kFingerprint            = "tls-fingerprint";
 static const char *kKeepalive              = "keepalive";
-static const char *kNicehash               = "nicehash";
 static const char *kPass                   = "pass";
 static const char *kRigId                  = "rig-id";
 static const char *kSelfSelect             = "self-select";
@@ -90,12 +87,9 @@ xmrig::Pool::Pool(const rapidjson::Value &object) :
     m_rigId        = Json::getString(object, kRigId);
     m_fingerprint  = Json::getString(object, kFingerprint);
     m_pollInterval = Json::getUint64(object, kDaemonPollInterval, kDefaultPollInterval);
-    m_algorithm    = Json::getString(object, kAlgo);
-    m_coin         = Json::getString(object, kCoin);
     m_daemon       = Json::getString(object, kSelfSelect);
 
     m_flags.set(FLAG_ENABLED,  Json::getBool(object, kEnabled, true));
-    m_flags.set(FLAG_NICEHASH, Json::getBool(object, kNicehash));
     m_flags.set(FLAG_TLS,      Json::getBool(object, kTls) || m_url.isTLS());
 
     if (m_daemon.isValid()) {
@@ -115,7 +109,7 @@ xmrig::Pool::Pool(const rapidjson::Value &object) :
 }
 
 
-xmrig::Pool::Pool(const char *host, uint16_t port, const char *user, const char *password, int keepAlive, bool nicehash, bool tls) :
+xmrig::Pool::Pool(const char *host, uint16_t port, const char *user, const char *password, int keepAlive, bool tls) :
     m_keepAlive(keepAlive),
     m_flags(1 << FLAG_ENABLED),
     m_password(password),
@@ -123,7 +117,6 @@ xmrig::Pool::Pool(const char *host, uint16_t port, const char *user, const char 
     m_pollInterval(kDefaultPollInterval),
     m_url(host, port, tls)
 {
-    m_flags.set(FLAG_NICEHASH, nicehash);
     m_flags.set(FLAG_TLS,      tls);
 }
 
@@ -148,10 +141,6 @@ bool xmrig::Pool::isEnabled() const
     }
 #   endif
 
-    if (m_mode == MODE_DAEMON && (!algorithm().isValid() && !coin().isValid())) {
-        return false;
-    }
-
     return m_flags.test(FLAG_ENABLED) && isValid();
 }
 
@@ -160,8 +149,6 @@ bool xmrig::Pool::isEqual(const Pool &other) const
 {
     return (m_flags           == other.m_flags
             && m_keepAlive    == other.m_keepAlive
-            && m_algorithm    == other.m_algorithm
-            && m_coin         == other.m_coin
             && m_mode         == other.m_mode
             && m_fingerprint  == other.m_fingerprint
             && m_password     == other.m_password
@@ -208,18 +195,12 @@ rapidjson::Value xmrig::Pool::toJSON(rapidjson::Document &doc) const
 
     Value obj(kObjectType);
 
-    obj.AddMember(StringRef(kAlgo),  m_algorithm.toJSON(), allocator);
-    obj.AddMember(StringRef(kCoin),  m_coin.toJSON(), allocator);
     obj.AddMember(StringRef(kUrl),   url().toJSON(), allocator);
     obj.AddMember(StringRef(kUser),  m_user.toJSON(), allocator);
 
     if (m_mode != MODE_DAEMON) {
         obj.AddMember(StringRef(kPass),  m_password.toJSON(), allocator);
         obj.AddMember(StringRef(kRigId), m_rigId.toJSON(), allocator);
-
-#       ifndef XMRIG_PROXY_PROJECT
-        obj.AddMember(StringRef(kNicehash), isNicehash(), allocator);
-#       endif
 
         if (m_keepAlive == 0 || m_keepAlive == kKeepAliveTimeout) {
             obj.AddMember(StringRef(kKeepalive), m_keepAlive > 0, allocator);
@@ -249,13 +230,6 @@ std::string xmrig::Pool::printableName() const
 {
     std::string out(CSI "1;" + std::to_string(isEnabled() ? (isTLS() ? 32 : 36) : 31) + "m" + url().data() + CLEAR);
 
-    if (m_coin.isValid()) {
-        out += std::string(" coin ") + WHITE_BOLD_S + m_coin.name() + CLEAR;
-    }
-    else {
-        out += std::string(" algo ") + WHITE_BOLD_S + (m_algorithm.isValid() ? m_algorithm.shortName() : "auto") + CLEAR;
-    }
-
     if (m_mode == MODE_SELF_SELECT) {
         out += std::string(" self-select ") + CSI "1;" + std::to_string(m_daemon.isTLS() ? 32 : 36) + "m" + m_daemon.url().data() + CLEAR;
     }
@@ -273,8 +247,6 @@ void xmrig::Pool::print() const
     LOG_DEBUG ("user:      %s", m_user.data());
     LOG_DEBUG ("pass:      %s", m_password.data());
     LOG_DEBUG ("rig-id     %s", m_rigId.data());
-    LOG_DEBUG ("algo:      %s", m_algorithm.name());
-    LOG_DEBUG ("nicehash:  %d", static_cast<int>(m_flags.test(FLAG_NICEHASH)));
     LOG_DEBUG ("keepAlive: %d", m_keepAlive);
 }
 #endif

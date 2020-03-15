@@ -45,73 +45,32 @@ public:
     //
     enum Id : int {
         INVALID = -1,
-        CN_0,          // "cn/0"             CryptoNight (original).
-        CN_1,          // "cn/1"             CryptoNight variant 1 also known as Monero7 and CryptoNightV7.
-        CN_2,          // "cn/2"             CryptoNight variant 2.
-        CN_R,          // "cn/r"             CryptoNightR (Monero's variant 4).
-        CN_FAST,       // "cn/fast"          CryptoNight variant 1 with half iterations.
-        CN_HALF,       // "cn/half"          CryptoNight variant 2 with half iterations (Masari/Torque).
-        CN_XAO,        // "cn/xao"           CryptoNight variant 0 (modified, Alloy only).
-        CN_RTO,        // "cn/rto"           CryptoNight variant 1 (modified, Arto only).
-        CN_RWZ,        // "cn/rwz"           CryptoNight variant 2 with 3/4 iterations and reversed shuffle operation (Graft).
-        CN_ZLS,        // "cn/zls"           CryptoNight variant 2 with 3/4 iterations (Zelerius).
-        CN_DOUBLE,     // "cn/double"        CryptoNight variant 2 with double iterations (X-CASH).
-        CN_GPU,        // "cn/gpu"           CryptoNight-GPU (Ryo).
-        CN_LITE_0,     // "cn-lite/0"        CryptoNight-Lite variant 0.
-        CN_LITE_1,     // "cn-lite/1"        CryptoNight-Lite variant 1.
-        CN_HEAVY_0,    // "cn-heavy/0"       CryptoNight-Heavy (4 MB).
-        CN_HEAVY_TUBE, // "cn-heavy/tube"    CryptoNight-Heavy (modified, TUBE only).
-        CN_HEAVY_XHV,  // "cn-heavy/xhv"     CryptoNight-Heavy (modified, Haven Protocol only).
-        CN_PICO_0,     // "cn-pico"          CryptoNight Turtle (TRTL)
-        RX_0,          // "rx/0"             RandomX (reference configuration).
-        RX_WOW,        // "rx/wow"           RandomWOW (Wownero).
-        RX_LOKI,       // "rx/loki"          RandomXL (Loki).
-        RX_ARQ,        // "rx/arq"           RandomARQ (Arqma).
-        AR2_CHUKWA,    // "argon2/chukwa"    Argon2id (Chukwa).
-        AR2_WRKZ,      // "argon2/wrkz"      Argon2id (WRKZ)
+		CN_0,
+        CN_1,
+        CN_2,
+        CN_BLUR,
         MAX
     };
 
-    enum Family : int {
-        UNKNOWN,
-        CN,
-        CN_LITE,
-        CN_HEAVY,
-        CN_PICO,
-        RANDOM_X,
-        ARGON2
-    };
-
     inline Algorithm() = default;
-    inline Algorithm(const char *algo) : m_id(parse(algo)) {}
-    inline Algorithm(Id id) : m_id(id)                     {}
 
-    inline bool isCN() const                          { auto f = family(); return f == CN || f == CN_LITE || f == CN_HEAVY || f == CN_PICO; }
-    inline bool isEqual(const Algorithm &other) const { return m_id == other.m_id; }
-    inline bool isValid() const                       { return m_id != INVALID; }
-    inline const char *name() const                   { return name(false); }
-    inline const char *shortName() const              { return name(true); }
-    inline Family family() const                      { return family(m_id); }
+    inline const char *name() const                   { return "cn/blur"; }
     inline Id id() const                              { return m_id; }
 
     inline bool operator!=(Algorithm::Id id) const        { return m_id != id; }
-    inline bool operator!=(const Algorithm &other) const  { return !isEqual(other); }
+    inline bool operator!=(const Algorithm &other) const  { return m_id != other.m_id; }
     inline bool operator==(Algorithm::Id id) const        { return m_id == id; }
-    inline bool operator==(const Algorithm &other) const  { return isEqual(other); }
+    inline bool operator==(const Algorithm &other) const  { return m_id == other.m_id; }
     inline operator Algorithm::Id() const                 { return m_id; }
 
     rapidjson::Value toJSON() const;
-    size_t l2() const;
     size_t l3() const;
     uint32_t maxIntensity() const;
 
-    static Family family(Id id);
-    static Id parse(const char *name);
+    static Id parse();
 
 private:
-    const char *name(bool shortName) const;
-
-    Id m_id = INVALID;
+    Id m_id = CN_BLUR;
 };
 
 

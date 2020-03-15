@@ -28,28 +28,26 @@
 
 #include "backend/common/Tags.h"
 #include "backend/cpu/CpuConfig.h"
-
+#include "crypto/cn/CnAlgo.h"
 
 #include <algorithm>
 
 
-xmrig::CpuLaunchData::CpuLaunchData(const Miner *miner, const Algorithm &algorithm, const CpuConfig &config, const CpuThread &thread) :
-    algorithm(algorithm),
+xmrig::CpuLaunchData::CpuLaunchData(const Miner *miner, const CpuConfig &config, const CpuThread &thread) :
     assembly(config.assembly()),
     hugePages(config.isHugePages()),
     hwAES(config.isHwAES()),
     priority(config.priority()),
     affinity(thread.affinity()),
     miner(miner),
-    intensity(std::min<uint32_t>(thread.intensity(), algorithm.maxIntensity()))
+    intensity(std::min<uint32_t>(thread.intensity(), 5))
 {
 }
 
 
 bool xmrig::CpuLaunchData::isEqual(const CpuLaunchData &other) const
 {
-    return (algorithm.l3()      == other.algorithm.l3()
-            && assembly         == other.assembly
+    return (assembly            == other.assembly
             && hugePages        == other.hugePages
             && hwAES            == other.hwAES
             && intensity        == other.intensity

@@ -6,7 +6,6 @@ if (WITH_OPENCL)
     set(HEADERS_BACKEND_OPENCL
         src/backend/opencl/cl/OclSource.h
         src/backend/opencl/interfaces/IOclRunner.h
-        src/backend/opencl/kernels/Cn0Kernel.h
         src/backend/opencl/kernels/Cn1Kernel.h
         src/backend/opencl/kernels/Cn2Kernel.h
         src/backend/opencl/kernels/CnBranchKernel.h
@@ -21,7 +20,6 @@ if (WITH_OPENCL)
         src/backend/opencl/OclWorker.h
         src/backend/opencl/runners/OclBaseRunner.h
         src/backend/opencl/runners/OclCnRunner.h
-        src/backend/opencl/runners/tools/OclCnR.h
         src/backend/opencl/runners/tools/OclSharedData.h
         src/backend/opencl/runners/tools/OclSharedState.h
         src/backend/opencl/wrappers/OclContext.h
@@ -37,7 +35,6 @@ if (WITH_OPENCL)
         src/backend/opencl/cl/OclSource.cpp
         src/backend/opencl/generators/ocl_generic_cn_generator.cpp
         src/backend/opencl/generators/ocl_vega_cn_generator.cpp
-        src/backend/opencl/kernels/Cn0Kernel.cpp
         src/backend/opencl/kernels/Cn1Kernel.cpp
         src/backend/opencl/kernels/Cn2Kernel.cpp
         src/backend/opencl/kernels/CnBranchKernel.cpp
@@ -50,7 +47,6 @@ if (WITH_OPENCL)
         src/backend/opencl/OclWorker.cpp
         src/backend/opencl/runners/OclBaseRunner.cpp
         src/backend/opencl/runners/OclCnRunner.cpp
-        src/backend/opencl/runners/tools/OclCnR.cpp
         src/backend/opencl/runners/tools/OclSharedData.cpp
         src/backend/opencl/runners/tools/OclSharedState.cpp
         src/backend/opencl/wrappers/OclContext.cpp
@@ -65,56 +61,6 @@ if (WITH_OPENCL)
        list(APPEND SOURCES_BACKEND_OPENCL src/backend/opencl/OclCache_win.cpp)
    else()
        list(APPEND SOURCES_BACKEND_OPENCL src/backend/opencl/OclCache_unix.cpp)
-   endif()
-
-   if (WITH_RANDOMX)
-       list(APPEND HEADERS_BACKEND_OPENCL
-           src/backend/opencl/kernels/rx/Blake2bHashRegistersKernel.h
-           src/backend/opencl/kernels/rx/Blake2bInitialHashKernel.h
-           src/backend/opencl/kernels/rx/ExecuteVmKernel.h
-           src/backend/opencl/kernels/rx/FillAesKernel.h
-           src/backend/opencl/kernels/rx/FindSharesKernel.h
-           src/backend/opencl/kernels/rx/HashAesKernel.cpp
-           src/backend/opencl/kernels/rx/InitVmKernel.h
-           src/backend/opencl/kernels/rx/RxJitKernel.h
-           src/backend/opencl/kernels/rx/RxRunKernel.h
-           src/backend/opencl/runners/OclRxBaseRunner.h
-           src/backend/opencl/runners/OclRxJitRunner.h
-           src/backend/opencl/runners/OclRxVmRunner.h
-           )
-
-       list(APPEND SOURCES_BACKEND_OPENCL
-           src/backend/opencl/generators/ocl_generic_rx_generator.cpp
-           src/backend/opencl/kernels/rx/Blake2bHashRegistersKernel.cpp
-           src/backend/opencl/kernels/rx/Blake2bInitialHashKernel.cpp
-           src/backend/opencl/kernels/rx/ExecuteVmKernel.cpp
-           src/backend/opencl/kernels/rx/FillAesKernel.cpp
-           src/backend/opencl/kernels/rx/FindSharesKernel.cpp
-           src/backend/opencl/kernels/rx/HashAesKernel.cpp
-           src/backend/opencl/kernels/rx/InitVmKernel.cpp
-           src/backend/opencl/kernels/rx/RxJitKernel.cpp
-           src/backend/opencl/kernels/rx/RxRunKernel.cpp
-           src/backend/opencl/runners/OclRxBaseRunner.cpp
-           src/backend/opencl/runners/OclRxJitRunner.cpp
-           src/backend/opencl/runners/OclRxVmRunner.cpp
-           )
-   endif()
-
-   if (WITH_CN_GPU AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-       list(APPEND HEADERS_BACKEND_OPENCL
-           src/backend/opencl/kernels/Cn00RyoKernel.h
-           src/backend/opencl/kernels/Cn1RyoKernel.h
-           src/backend/opencl/kernels/Cn2RyoKernel.h
-           src/backend/opencl/runners/OclRyoRunner.h
-           )
-
-       list(APPEND SOURCES_BACKEND_OPENCL
-           src/backend/opencl/generators/ocl_generic_cn_gpu_generator.cpp
-           src/backend/opencl/kernels/Cn00RyoKernel.cpp
-           src/backend/opencl/kernels/Cn1RyoKernel.cpp
-           src/backend/opencl/kernels/Cn2RyoKernel.cpp
-           src/backend/opencl/runners/OclRyoRunner.cpp
-           )
    endif()
 
    if (WITH_STRICT_CACHE)

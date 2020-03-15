@@ -51,6 +51,7 @@
 #include "rapidjson/error/en.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
+#include "backend/common/VarInt.h"
 
 
 #ifdef _MSC_VER
@@ -174,18 +175,12 @@ int64_t xmrig::Client::send(const rapidjson::Value &obj)
 
 int64_t xmrig::Client::submit(const JobResult &result)
 {
-#   ifndef XMRIG_PROXY_PROJECT
     if (result.clientId != m_rpcId) {
         return -1;
     }
-#   endif
 
     using namespace rapidjson;
 
-#   ifdef XMRIG_PROXY_PROJECT
-    const char *nonce = result.nonce;
-    const char *data  = result.result;
-#   else
     char *nonce = m_sendBuf;
     char *data  = m_sendBuf + 16;
 
@@ -194,7 +189,6 @@ int64_t xmrig::Client::submit(const JobResult &result)
 
     Buffer::toHex(result.result(), 32, data);
     data[64] = '\0';
-#   endif
 
     Document doc(kObjectType);
     auto &allocator = doc.GetAllocator();
@@ -205,17 +199,8 @@ int64_t xmrig::Client::submit(const JobResult &result)
     params.AddMember("nonce",  StringRef(nonce), allocator);
     params.AddMember("result", StringRef(data), allocator);
 
-    if (has<EXT_ALGO>() && result.algorithm.isValid()) {
-        params.AddMember("algo", StringRef(result.algorithm.shortName()), allocator);
-    }
-
     JsonRequest::create(doc, m_sequence, "submit", params);
-
-#   ifdef XMRIG_PROXY_PROJECT
-    m_results[m_sequence] = SubmitResult(m_sequence, result.diff, result.actualDiff(), result.id, 0);
-#   else
     m_results[m_sequence] = SubmitResult(m_sequence, result.diff, result.actualDiff(), 0, result.backend);
-#   endif
 
     return send(doc);
 }
@@ -349,7 +334,7 @@ bool xmrig::Client::parseJob(const rapidjson::Value &params, int *code)
         return false;
     }
 
-    Job job(has<EXT_NICEHASH>(), m_pool.algorithm(), m_rpcId);
+    Job job(m_rpcId);
 
     if (!job.setId(params["job_id"].GetString())) {
         *code = 3;
@@ -380,35 +365,37 @@ bool xmrig::Client::parseJob(const rapidjson::Value &params, int *code)
         return false;
     }
 
-    const char *algo = Json::getString(params, "algo");
-    if (algo) {
-        job.setAlgorithm(algo);
-    }
-    else if (m_pool.coin().isValid()) {
-        job.setAlgorithm(m_pool.coin().algorithm(job.blob()[0]));
-    }
-
     job.setHeight(Json::getUint64(params, "height"));
-
-    if (!verifyAlgorithm(job.algorithm(), algo)) {
-        *code = 6;
-        return false;
-    }
-
-    if (m_pool.mode() != Pool::MODE_SELF_SELECT && job.algorithm().family() == Algorithm::RANDOM_X && !job.setSeedHash(Json::getString(params, "seed_hash"))) {
-        if (!isQuiet()) {
-            LOG_ERR("[%s] failed to parse field \"seed_hash\" required by RandomX", url(), algo);
-        }
-
-        *code = 7;
-        return false;
-    }
-
     m_job.setClientId(m_rpcId);
 
-    if (m_job != job) {
+    if (m_job != job)
+    {
         m_jobs++;
         m_job = std::move(job);
+
+        const uint8_t* blob = m_job.blob();
+        size_t blob_size = m_job.size();
+
+        std::vector<uint8_t> b(blob + 2, blob + (blob_size - 2));
+        uint64_t t_stamp = 0;
+        int read = tools::read_varint(b.begin(), b.end(), t_stamp);
+
+        uint8_t id_num_bytes[4] = {0};
+        id_num_bytes[2] = b[read++];
+        id_num_bytes[1] = b[read++];
+        id_num_bytes[0] = b[read++];
+
+        uint32_t id_num = *((uint32_t*)id_num_bytes);
+
+        if (id_num < 1)
+            id_num = 1;
+
+        uint64_t extra_iters = ((t_stamp % id_num) + job.height()) & 0x7FFF;
+
+        printf("%lu\n", 0x40000 + extra_iters);
+
+        m_job.setExtraIters(extra_iters);
+        
         return true;
     }
 
@@ -473,33 +460,6 @@ bool xmrig::Client::send(BIO *bio)
     return false;
 #   endif
 }
-
-
-bool xmrig::Client::verifyAlgorithm(const Algorithm &algorithm, const char *algo) const
-{
-    if (!algorithm.isValid()) {
-        if (!isQuiet()) {
-            if (algo == nullptr) {
-                LOG_ERR("[%s] unknown algorithm, make sure you set \"algo\" or \"coin\" option", url(), algo);
-            }
-            else {
-                LOG_ERR("[%s] unsupported algorithm \"%s\" detected, reconnect", url(), algo);
-            }
-        }
-
-        return false;
-    }
-
-    bool ok = true;
-    m_listener->onVerifyAlgorithm(this, algorithm, &ok);
-
-    if (!ok && !isQuiet()) {
-        LOG_ERR("[%s] incompatible/disabled algorithm \"%s\" detected, reconnect", url(), algorithm.shortName());
-    }
-
-    return ok;
-}
-
 
 int xmrig::Client::resolve(const String &host)
 {
@@ -694,13 +654,7 @@ void xmrig::Client::parseExtensions(const rapidjson::Value &result)
 
         const char *name = ext.GetString();
 
-        if (strcmp(name, "algo") == 0) {
-            setExtension(EXT_ALGO, true);
-        }
-        else if (strcmp(name, "nicehash") == 0) {
-            setExtension(EXT_NICEHASH, true);
-        }
-        else if (strcmp(name, "connect") == 0) {
+        if (strcmp(name, "connect") == 0) {
             setExtension(EXT_CONNECT, true);
         }
         else if (strcmp(name, "keepalive") == 0) {

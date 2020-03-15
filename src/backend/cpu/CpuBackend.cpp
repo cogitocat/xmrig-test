@@ -39,18 +39,11 @@
 #include "core/config/Config.h"
 #include "core/Controller.h"
 #include "crypto/common/VirtualMemory.h"
-#include "crypto/rx/Rx.h"
-#include "crypto/rx/RxDataset.h"
 #include "rapidjson/document.h"
 
 
 #ifdef XMRIG_FEATURE_API
 #   include "base/api/interfaces/IApiRequest.h"
-#endif
-
-
-#ifdef XMRIG_ALGO_ARGON2
-#   include "crypto/argon2/Impl.h"
 #endif
 
 
@@ -146,15 +139,14 @@ public:
 
     inline void start()
     {
-        LOG_INFO("%s use profile " BLUE_BG(WHITE_BOLD_S " %s ") WHITE_BOLD_S " (" CYAN_BOLD("%zu") WHITE_BOLD(" thread%s)") " scratchpad " CYAN_BOLD("%zu KB"),
+        LOG_INFO("%s use profile " BLUE_BG(WHITE_BOLD_S " cn/blur ") WHITE_BOLD_S " (" CYAN_BOLD("%zu") WHITE_BOLD(" thread%s)") " scratchpad " CYAN_BOLD("%zu KB"),
                  tag,
-                 profileName.data(),
                  threads.size(),
                  threads.size() > 1 ? "s" : "",
-                 algo.l3() / 1024
+                 CnAlgo::CN_MEMORY / 1024
                  );
 
-        status.start(threads, algo.l3());
+        status.start(threads, CnAlgo::CN_MEMORY);
         workers.start(threads);
     }
 
@@ -170,12 +162,6 @@ public:
     rapidjson::Value hugePages(int version, rapidjson::Document &doc)
     {
         std::pair<unsigned, unsigned> pages(0, 0);
-
-    #   ifdef XMRIG_ALGO_RANDOMX
-        if (algo.family() == Algorithm::RANDOM_X) {
-            pages = Rx::hugePages();
-        }
-    #   endif
 
         mutex.lock();
 
@@ -198,12 +184,9 @@ public:
         return hugepages;
     }
 
-
-    Algorithm algo;
     Controller *controller;
     CpuLaunchStatus status;
     std::vector<CpuLaunchData> threads;
-    String profileName;
     Workers<CpuLaunchData> workers;
 };
 
@@ -256,19 +239,13 @@ bool xmrig::CpuBackend::isEnabled() const
 
 bool xmrig::CpuBackend::isEnabled(const Algorithm &algorithm) const
 {
-    return !d_ptr->controller->config()->cpu().threads().get(algorithm).isEmpty();
+    return !d_ptr->controller->config()->cpu().threads().get().isEmpty();
 }
 
 
 const xmrig::Hashrate *xmrig::CpuBackend::hashrate() const
 {
     return d_ptr->workers.hashrate();
-}
-
-
-const xmrig::String &xmrig::CpuBackend::profileName() const
-{
-    return d_ptr->profileName;
 }
 
 
@@ -280,15 +257,7 @@ const xmrig::String &xmrig::CpuBackend::type() const
 
 void xmrig::CpuBackend::prepare(const Job &nextJob)
 {
-#   ifdef XMRIG_ALGO_ARGON2
-    if (nextJob.algorithm().family() == Algorithm::ARGON2 && argon2::Impl::select(d_ptr->controller->config()->cpu().argon2Impl())) {
-        LOG_INFO("%s use " WHITE_BOLD("argon2") " implementation " CSI "1;%dm" "%s",
-                 tag,
-                 argon2::Impl::name() == "default" ? 33 : 32,
-                 argon2::Impl::name().data()
-                 );
-    }
-#   endif
+
 }
 
 
@@ -333,15 +302,12 @@ void xmrig::CpuBackend::setJob(const Job &job)
 
     const CpuConfig &cpu = d_ptr->controller->config()->cpu();
 
-    std::vector<CpuLaunchData> threads = cpu.get(d_ptr->controller->miner(), job.algorithm());
+    std::vector<CpuLaunchData> threads = cpu.get(d_ptr->controller->miner());
     if (!d_ptr->threads.empty() && d_ptr->threads.size() == threads.size() && std::equal(d_ptr->threads.begin(), d_ptr->threads.end(), threads.begin())) {
         return;
     }
 
-    d_ptr->algo         = job.algorithm();
-    d_ptr->profileName  = cpu.threads().profileName(job.algorithm());
-
-    if (d_ptr->profileName.isNull() || threads.empty()) {
+    if (threads.empty()) {
         LOG_WARN("%s " RED_BOLD("disabled") YELLOW(" (no suitable configuration found)"), tag);
 
         return stop();
@@ -401,24 +367,11 @@ rapidjson::Value xmrig::CpuBackend::toJSON(rapidjson::Document &doc) const
     Value out(kObjectType);
     out.AddMember("type",       type().toJSON(), allocator);
     out.AddMember("enabled",    isEnabled(), allocator);
-    out.AddMember("algo",       d_ptr->algo.toJSON(), allocator);
-    out.AddMember("profile",    profileName().toJSON(), allocator);
     out.AddMember("hw-aes",     cpu.isHwAES(), allocator);
     out.AddMember("priority",   cpu.priority(), allocator);
 
-#   ifdef XMRIG_FEATURE_ASM
-    const Assembly assembly = Cpu::assembly(cpu.assembly());
-    out.AddMember("asm", assembly.toJSON(), allocator);
-#   else
-    out.AddMember("asm", false, allocator);
-#   endif
-
-#   ifdef XMRIG_ALGO_ARGON2
-    out.AddMember("argon2-impl", argon2::Impl::name().toJSON(), allocator);
-#   endif
-
     out.AddMember("hugepages", d_ptr->hugePages(2, doc), allocator);
-    out.AddMember("memory",    static_cast<uint64_t>(d_ptr->algo.isValid() ? (d_ptr->ways() * d_ptr->algo.l3()) : 0), allocator);
+    out.AddMember("memory",    static_cast<uint64_t>(d_ptr->ways() * CnAlgo::CN_MEMORY), allocator);
 
     if (d_ptr->threads.empty() || !hashrate()) {
         return out;

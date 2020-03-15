@@ -41,6 +41,7 @@
 
 #include "backend/cpu/platform/HwlocCpuInfo.h"
 #include "base/io/log/Log.h"
+#include "crypto/cn/CnAlgo.h"
 
 
 namespace xmrig {
@@ -214,10 +215,10 @@ bool xmrig::HwlocCpuInfo::membind(hwloc_const_bitmap_t nodeset)
 }
 
 
-xmrig::CpuThreads xmrig::HwlocCpuInfo::threads(const Algorithm &algorithm, uint32_t limit) const
+xmrig::CpuThreads xmrig::HwlocCpuInfo::threads(uint32_t limit) const
 {
     if (L2() == 0 && L3() == 0) {
-        return BasicCpuInfo::threads(algorithm, limit);
+        return BasicCpuInfo::threads(limit);
     }
 
     const unsigned depth = L3() > 0 ? 3 : 2;
@@ -236,7 +237,7 @@ xmrig::CpuThreads xmrig::HwlocCpuInfo::threads(const Algorithm &algorithm, uint3
         int remaining                = std::max(static_cast<int>(maxTotalThreads), 1);
 
         for (hwloc_obj_t cache : caches) {
-            processTopLevelCache(cache, algorithm, threads, std::min(maxPerCache, remaining));
+            processTopLevelCache(cache, threads, std::min(maxPerCache, remaining));
 
             remaining -= maxPerCache;
             if (remaining <= 0) {
@@ -246,21 +247,21 @@ xmrig::CpuThreads xmrig::HwlocCpuInfo::threads(const Algorithm &algorithm, uint3
     }
     else {
         for (hwloc_obj_t cache : caches) {
-            processTopLevelCache(cache, algorithm, threads, 0);
+            processTopLevelCache(cache, threads, 0);
         }
     }
 
     if (threads.isEmpty()) {
-        LOG_WARN("hwloc auto configuration for algorithm \"%s\" failed.", algorithm.shortName());
+        LOG_WARN("hwloc auto configuration failed.");
 
-        return BasicCpuInfo::threads(algorithm, limit);
+        return BasicCpuInfo::threads(limit);
     }
 
     return threads;
 }
 
 
-void xmrig::HwlocCpuInfo::processTopLevelCache(hwloc_obj_t cache, const Algorithm &algorithm, CpuThreads &threads, size_t limit) const
+void xmrig::HwlocCpuInfo::processTopLevelCache(hwloc_obj_t cache, CpuThreads &threads, size_t limit) const
 {
     constexpr size_t oneMiB = 1024u * 1024u;
 
@@ -278,8 +279,8 @@ void xmrig::HwlocCpuInfo::processTopLevelCache(hwloc_obj_t cache, const Algorith
     size_t L2               = 0;
     int L2_associativity    = 0;
     size_t extra            = 0;
-    const size_t scratchpad = algorithm.l3();
-    uint32_t intensity      = algorithm.maxIntensity() == 1 ? 0 : 1;
+    const size_t scratchpad = xmrig::CnAlgo::CN_MEMORY;
+    uint32_t intensity      = xmrig::CnAlgo::CN_MAX_INTENSITY == 1 ? 0 : 1;
 
     if (cache->attr->cache.depth == 3) {
         for (size_t i = 0; i < cache->arity; ++i) {
@@ -305,24 +306,6 @@ void xmrig::HwlocCpuInfo::processTopLevelCache(hwloc_obj_t cache, const Algorith
     }
 
     size_t cacheHashes = ((L3 + extra) + (scratchpad / 2)) / scratchpad;
-
-#   ifdef XMRIG_ALGO_CN_PICO
-    if (algorithm == Algorithm::CN_PICO_0 && (cacheHashes / PUs) >= 2) {
-        intensity = 2;
-    }
-#   endif
-
-#   ifdef XMRIG_ALGO_CN_GPU
-    if (algorithm == Algorithm::CN_GPU) {
-        cacheHashes = PUs;
-    }
-#   endif
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    if (extra == 0 && algorithm.l2() > 0) {
-        cacheHashes = std::min<size_t>(std::max<size_t>(L2 / algorithm.l2(), cores.size()), cacheHashes);
-    }
-#   endif
 
     if (limit > 0) {
         cacheHashes = std::min(cacheHashes, limit);

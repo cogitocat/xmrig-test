@@ -60,7 +60,7 @@ public:
     bool membind(hwloc_const_bitmap_t nodeset);
 
 protected:
-    CpuThreads threads(const Algorithm &algorithm, uint32_t limit) const override;
+    CpuThreads threads(uint32_t limit) const override;
 
     inline const char *backend() const override     { return m_backend; }
     inline size_t cores() const override            { return m_cores; }
@@ -70,7 +70,7 @@ protected:
     inline size_t packages() const override         { return m_packages; }
 
 private:
-    void processTopLevelCache(hwloc_obj_t obj, const Algorithm &algorithm, CpuThreads &threads, size_t limit) const;
+    void processTopLevelCache(hwloc_obj_t obj, CpuThreads &threads, size_t limit) const;
 
 
     static uint32_t m_features;

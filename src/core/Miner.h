@@ -28,8 +28,6 @@
 
 #include <vector>
 
-
-#include "backend/common/interfaces/IRxListener.h"
 #include "base/api/interfaces/IApiListener.h"
 #include "base/kernel/interfaces/IBaseListener.h"
 #include "base/kernel/interfaces/ITimerListener.h"
@@ -46,7 +44,7 @@ class MinerPrivate;
 class IBackend;
 
 
-class Miner : public ITimerListener, public IBaseListener, public IApiListener, public IRxListener
+class Miner : public ITimerListener, public IBaseListener, public IApiListener
 {
 public:
     XMRIG_DISABLE_COPY_MOVE_DEFAULT(Miner)
@@ -56,14 +54,13 @@ public:
 
     bool isEnabled() const;
     bool isEnabled(const Algorithm &algorithm) const;
-    const Algorithms &algorithms() const;
     const std::vector<IBackend *> &backends() const;
     Job job() const;
     void execCommand(char command);
     void pause();
     void printHashrate(bool details);
     void setEnabled(bool enabled);
-    void setJob(const Job &job, bool donate);
+    void setJob(const Job &job);
     void stop();
 
 protected:
@@ -72,10 +69,6 @@ protected:
 
 #   ifdef XMRIG_FEATURE_API
     void onRequest(IApiRequest &request) override;
-#   endif
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    void onDatasetReady() override;
 #   endif
 
 private:

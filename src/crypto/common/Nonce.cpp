@@ -54,19 +54,13 @@ xmrig::Nonce::Nonce()
 }
 
 
-uint32_t xmrig::Nonce::next(uint8_t index, uint32_t nonce, uint32_t reserveCount, bool nicehash)
+uint32_t xmrig::Nonce::next(uint8_t index, uint32_t nonce, uint32_t reserveCount)
 {
     uint32_t next;
 
     std::lock_guard<std::mutex> lock(mutex);
 
-    if (nicehash) {
-        next = (nonce & 0xFF000000) | m_nonces[index];
-    }
-    else {
-        next = m_nonces[index];
-    }
-
+    next = m_nonces[index];
     m_nonces[index] += reserveCount;
 
     return next;

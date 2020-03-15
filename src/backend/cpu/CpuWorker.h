@@ -57,18 +57,11 @@ protected:
     inline size_t intensity() const override            { return N; }
 
 private:
-    inline cn_hash_fun fn(const Algorithm &algorithm) const { return CnHash::fn(algorithm, m_av, m_assembly); }
+    inline cn_hash_fun fn() const { return CnHash::fn(m_av, m_assembly); }
 
-#   ifdef XMRIG_ALGO_RANDOMX
-    void allocateRandomX_VM();
-#   endif
-
-    bool verify(const Algorithm &algorithm, const uint8_t *referenceValue);
-    bool verify2(const Algorithm &algorithm, const uint8_t *referenceValue);
     void allocateCnCtx();
     void consumeJob();
 
-    const Algorithm m_algorithm;
     const Assembly m_assembly;
     const bool m_hwAES;
     const CnHash::AlgoVariant m_av;
@@ -77,22 +70,14 @@ private:
     uint8_t m_hash[N * 32]{ 0 };
     VirtualMemory *m_memory = nullptr;
     WorkerJob<N> m_job;
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    RxVm *m_vm = nullptr;
-#   endif
 };
-
-
-template<>
-bool CpuWorker<1>::verify2(const Algorithm &algorithm, const uint8_t *referenceValue);
-
 
 extern template class CpuWorker<1>;
 extern template class CpuWorker<2>;
 extern template class CpuWorker<3>;
 extern template class CpuWorker<4>;
 extern template class CpuWorker<5>;
+extern template class CpuWorker<6>;
 
 
 } // namespace xmrig

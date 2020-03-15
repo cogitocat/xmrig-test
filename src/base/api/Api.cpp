@@ -126,9 +126,6 @@ void xmrig::Api::exec(IApiRequest &request)
 #       ifdef XMRIG_FEATURE_API
         features.PushBack("api", allocator);
 #       endif
-#       ifdef XMRIG_FEATURE_ASM
-        features.PushBack("asm", allocator);
-#       endif
 #       ifdef XMRIG_FEATURE_HTTP
         features.PushBack("http", allocator);
 #       endif

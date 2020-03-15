@@ -41,7 +41,7 @@ class OclThreads
 public:
     OclThreads() = default;
     OclThreads(const rapidjson::Value &value);
-    OclThreads(const std::vector<OclDevice> &devices, const Algorithm &algorithm);
+    OclThreads(const std::vector<OclDevice> &devices);
 
     inline bool isEmpty() const                             { return m_data.empty(); }
     inline const std::vector<OclThread> &data() const       { return m_data; }

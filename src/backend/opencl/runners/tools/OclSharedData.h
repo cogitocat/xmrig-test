@@ -56,11 +56,6 @@ public:
 
     inline OclSharedData &operator++()  { ++m_threads; return *this; }
 
-#   ifdef XMRIG_ALGO_RANDOMX
-    cl_mem dataset() const;
-    void createDataset(cl_context ctx, const Job &job, bool host);
-#   endif
-
 private:
     cl_mem m_buffer           = nullptr;
     double m_averageRunTime   = 0.0;
@@ -70,10 +65,6 @@ private:
     std::mutex m_mutex;
     uint32_t m_resumeCounter  = 0;
     uint64_t m_timestamp      = 0;
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    cl_mem m_dataset          = nullptr;
-#   endif
 };
 
 

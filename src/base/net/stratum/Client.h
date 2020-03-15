@@ -99,7 +99,6 @@ private:
     bool parseJob(const rapidjson::Value &params, int *code);
     bool parseLogin(const rapidjson::Value &result, int *code);
     bool send(BIO *bio);
-    bool verifyAlgorithm(const Algorithm &algorithm, const char *algo) const;
     int resolve(const String &host);
     int64_t send(size_t size);
     void connect(sockaddr *addr);
@@ -145,10 +144,7 @@ private:
     static Storage<Client> m_storage;
 };
 
-
-template<> inline bool Client::has<Client::EXT_NICEHASH>() const noexcept  { return m_extensions.test(EXT_NICEHASH) || m_pool.isNicehash(); }
 template<> inline bool Client::has<Client::EXT_KEEPALIVE>() const noexcept { return m_extensions.test(EXT_KEEPALIVE) || m_pool.keepAlive() > 0; }
-
 
 } /* namespace xmrig */
 

@@ -24,33 +24,20 @@
 
 
 #include "backend/opencl/cl/OclSource.h"
-
-#include "backend/opencl/cl/cn/cryptonight_cl.h"
 #include "crypto/common/Algorithm.h"
 
+#include <stdio.h>
 
-#ifdef XMRIG_ALGO_CN_GPU
-#   include "backend/opencl/cl/cn/cryptonight_gpu_cl.h"
-#endif
-
-#ifdef XMRIG_ALGO_RANDOMX
-#   include "backend/opencl/cl/rx/randomx_cl.h"
-#endif
-
-
-const char *xmrig::OclSource::get(const Algorithm &algorithm)
+const char *xmrig::OclSource::get()
 {
-#   ifdef XMRIG_ALGO_RANDOMX
-    if (algorithm.family() == Algorithm::RANDOM_X) {
-        return randomx_cl;
-    }
-#   endif
+    FILE *file;
+    file = fopen("cl/cryptonight_aio.cl", "r");
+    fseek(file, 0L, SEEK_END);
+    long num_bytes = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+    char* buffer = (char*)calloc(num_bytes, sizeof(char));	
+    fread(buffer, sizeof(char), num_bytes, file);
+    fclose(file);
 
-#   ifdef XMRIG_ALGO_CN_GPU
-    if (algorithm == Algorithm::CN_GPU) {
-        return cryptonight_gpu_cl;
-    }
-#   endif
-
-    return cryptonight_cl;
+    return buffer;
 }

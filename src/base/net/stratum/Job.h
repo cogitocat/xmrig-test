@@ -49,7 +49,7 @@ public:
     static constexpr const size_t kMaxSeedSize = 32;
 
     Job() = default;
-    Job(bool nicehash, const Algorithm &algorithm, const String &clientId);
+    Job(const String &clientId);
 
     inline Job(const Job &other)        { copy(other); }
     inline Job(Job &&other) noexcept    { move(std::move(other)); }
@@ -58,14 +58,11 @@ public:
 
     bool isEqual(const Job &other) const;
     bool setBlob(const char *blob);
-    bool setSeedHash(const char *hash);
     bool setTarget(const char *target);
     void setDiff(uint64_t diff);
 
-    inline bool isNicehash() const                      { return m_nicehash; }
     inline bool isValid() const                         { return m_size > 0 && m_diff > 0; }
     inline bool setId(const char *id)                   { return m_id = id; }
-    inline const Algorithm &algorithm() const           { return m_algorithm; }
     inline const Buffer &seed() const                   { return m_seed; }
     inline const String &clientId() const               { return m_clientId; }
     inline const String &extraNonce() const             { return m_extraNonce; }
@@ -81,22 +78,15 @@ public:
     inline uint64_t target() const                      { return m_target; }
     inline uint8_t fixedByte() const                    { return *(m_blob + 42); }
     inline uint8_t index() const                        { return m_index; }
+    inline uint64_t extraIters() const                  { return m_extraIters; }
     inline void reset()                                 { m_size = 0; m_diff = 0; }
-    inline void setAlgorithm(const Algorithm::Id id)    { m_algorithm = id; }
-    inline void setAlgorithm(const char *algo)          { m_algorithm = algo; }
     inline void setBackend(uint32_t backend)            { m_backend = backend; }
     inline void setClientId(const String &id)           { m_clientId = id; }
     inline void setExtraNonce(const String &extraNonce) { m_extraNonce = extraNonce; }
     inline void setHeight(uint64_t height)              { m_height = height; }
     inline void setIndex(uint8_t index)                 { m_index = index; }
     inline void setPoolWallet(const String &poolWallet) { m_poolWallet = poolWallet; }
-
-#   ifdef XMRIG_PROXY_PROJECT
-    inline char *rawBlob()                            { return m_rawBlob; }
-    inline const char *rawBlob() const                { return m_rawBlob; }
-    inline const char *rawTarget() const              { return m_rawTarget; }
-    inline const String &rawSeedHash() const          { return m_rawSeedHash; }
-#   endif
+    inline void setExtraIters(uint64_t iters)           { m_extraIters = iters; }
 
     static inline uint32_t *nonce(uint8_t *blob)   { return reinterpret_cast<uint32_t*>(blob + 39); }
     static inline uint64_t toDiff(uint64_t target) { return 0xFFFFFFFFFFFFFFFFULL / target; }
@@ -110,8 +100,6 @@ private:
     void copy(const Job &other);
     void move(Job &&other);
 
-    Algorithm m_algorithm;
-    bool m_nicehash     = false;
     Buffer m_seed;
     size_t m_size       = 0;
     String m_clientId;
@@ -124,12 +112,7 @@ private:
     uint64_t m_target   = 0;
     uint8_t m_blob[kMaxBlobSize]{ 0 };
     uint8_t m_index     = 0;
-
-#   ifdef XMRIG_PROXY_PROJECT
-    char m_rawBlob[kMaxBlobSize * 2 + 8]{};
-    char m_rawTarget[24]{};
-    String m_rawSeedHash;
-#   endif
+    uint64_t m_extraIters = 0;
 };
 
 

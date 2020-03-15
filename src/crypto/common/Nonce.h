@@ -52,7 +52,7 @@ public:
     static inline void stop(Backend backend)                            { m_sequence[backend] = 0; }
     static inline void touch(Backend backend)                           { m_sequence[backend]++; }
 
-    static uint32_t next(uint8_t index, uint32_t nonce, uint32_t reserveCount, bool nicehash);
+    static uint32_t next(uint8_t index, uint32_t nonce, uint32_t reserveCount);
     static void reset(uint8_t index);
     static void stop();
     static void touch();

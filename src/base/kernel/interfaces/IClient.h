@@ -46,8 +46,6 @@ class IClient
 {
 public:
     enum Extension {
-        EXT_ALGO,
-        EXT_NICEHASH,
         EXT_CONNECT,
         EXT_TLS,
         EXT_KEEPALIVE,
@@ -76,7 +74,6 @@ public:
     virtual void connect()                                                  = 0;
     virtual void connect(const Pool &pool)                                  = 0;
     virtual void deleteLater()                                              = 0;
-    virtual void setAlgo(const Algorithm &algo)                             = 0;
     virtual void setEnabled(bool enabled)                                   = 0;
     virtual void setPool(const Pool &pool)                                  = 0;
     virtual void setQuiet(bool quiet)                                       = 0;

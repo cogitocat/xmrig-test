@@ -30,11 +30,7 @@
 #include "backend/opencl/wrappers/OclLib.h"
 #include "base/io/log/Log.h"
 #include "crypto/cn/CnAlgo.h"
-#include "crypto/common/Algorithm.h"
 #include "rapidjson/document.h"
-
-
-#include <algorithm>
 
 
 typedef union
@@ -46,26 +42,11 @@ typedef union
 
 namespace xmrig {
 
-
-#ifdef XMRIG_ALGO_RANDOMX
-extern bool ocl_generic_rx_generator(const OclDevice &device, const Algorithm &algorithm, OclThreads &threads);
-#endif
-
-#ifdef XMRIG_ALGO_CN_GPU
-extern bool ocl_generic_cn_gpu_generator(const OclDevice &device, const Algorithm &algorithm, OclThreads &threads);
-#endif
-
-extern bool ocl_vega_cn_generator(const OclDevice &device, const Algorithm &algorithm, OclThreads &threads);
-extern bool ocl_generic_cn_generator(const OclDevice &device, const Algorithm &algorithm, OclThreads &threads);
+extern bool ocl_vega_cn_generator(const OclDevice &device, OclThreads &threads);
+extern bool ocl_generic_cn_generator(const OclDevice &device, OclThreads &threads);
 
 
 static ocl_gen_config_fun generators[] = {
-#   ifdef XMRIG_ALGO_RANDOMX
-    ocl_generic_rx_generator,
-#   endif
-#   ifdef XMRIG_ALGO_CN_GPU
-    ocl_generic_cn_gpu_generator,
-#   endif
     ocl_vega_cn_generator,
     ocl_generic_cn_generator
 };
@@ -179,10 +160,10 @@ uint32_t xmrig::OclDevice::clock() const
 }
 
 
-void xmrig::OclDevice::generate(const Algorithm &algorithm, OclThreads &threads) const
+void xmrig::OclDevice::generate(OclThreads &threads) const
 {
     for (auto fn : generators) {
-        if (fn(*this, algorithm, threads)) {
+        if (fn(*this, threads)) {
             return;
         }
     }

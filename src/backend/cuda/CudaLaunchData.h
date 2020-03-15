@@ -42,7 +42,7 @@ class Miner;
 class CudaLaunchData
 {
 public:
-    CudaLaunchData(const Miner *miner, const Algorithm &algorithm, const CudaThread &thread, const CudaDevice &device);
+    CudaLaunchData(const Miner *miner, const CudaThread &thread, const CudaDevice &device);
 
     bool isEqual(const CudaLaunchData &other) const;
 
@@ -53,7 +53,6 @@ public:
 
     static const char *tag();
 
-    const Algorithm algorithm;
     const Miner *miner;
     const CudaDevice &device;
     const CudaThread thread;

@@ -54,7 +54,6 @@ protected:
     inline const String &ip() const override                   { return m_ip; }
     inline int id() const override                             { return m_id; }
     inline int64_t sequence() const override                   { return m_sequence; }
-    inline void setAlgo(const Algorithm &algo) override        { m_pool.setAlgo(algo); }
     inline void setEnabled(bool enabled) override              { m_enabled = enabled; }
     inline void setPool(const Pool &pool) override             { if (pool.isValid()) { m_pool = pool; } }
     inline void setQuiet(bool quiet) override                  { m_quiet = quiet; }

@@ -69,7 +69,6 @@ protected:
     void onLogin(IStrategy *strategy, IClient *client, rapidjson::Document &doc, rapidjson::Value &params) override;
     void onPause(IStrategy *strategy) override;
     void onResultAccepted(IStrategy *strategy, IClient *client, const SubmitResult &result, const char *error) override;
-    void onVerifyAlgorithm(IStrategy *strategy, const  IClient *client, const Algorithm &algorithm, bool *ok) override;
 
 #   ifdef XMRIG_FEATURE_API
     void onRequest(IApiRequest &request) override;
@@ -78,7 +77,7 @@ protected:
 private:
     constexpr static int kTickInterval = 1 * 1000;
 
-    void setJob(IClient *client, const Job &job, bool donate);
+    void setJob(IClient *client, const Job &job);
     void tick();
 
 #   ifdef XMRIG_FEATURE_API

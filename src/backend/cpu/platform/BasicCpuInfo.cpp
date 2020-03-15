@@ -22,7 +22,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <algorithm>
 #include <string.h>
 #include <thread>
 
@@ -147,29 +146,6 @@ xmrig::BasicCpuInfo::BasicCpuInfo() :
     m_avx2(has_avx2())
 {
     cpu_brand_string(m_brand);
-
-#   ifdef XMRIG_FEATURE_ASM
-    if (hasAES()) {
-        char vendor[13] = { 0 };
-        int32_t data[4] = { 0 };
-
-        cpuid(VENDOR_ID, data);
-
-        memcpy(vendor + 0, &data[1], 4);
-        memcpy(vendor + 4, &data[3], 4);
-        memcpy(vendor + 8, &data[2], 4);
-
-        if (memcmp(vendor, "AuthenticAMD", 12) == 0) {
-            cpuid(PROCESSOR_INFO, data);
-            const int32_t family = get_masked(data[EAX_Reg], 12, 8) + get_masked(data[EAX_Reg], 28, 20);
-
-            m_assembly = family >= 23 ? Assembly::RYZEN : Assembly::BULLDOZER;
-        }
-        else {
-            m_assembly = Assembly::INTEL;
-        }
-    }
-#   endif
 }
 
 
@@ -179,53 +155,13 @@ const char *xmrig::BasicCpuInfo::backend() const
 }
 
 
-xmrig::CpuThreads xmrig::BasicCpuInfo::threads(const Algorithm &algorithm, uint32_t limit) const
+xmrig::CpuThreads xmrig::BasicCpuInfo::threads(uint32_t limit) const
 {
     const size_t count = std::thread::hardware_concurrency();
 
     if (count == 1) {
         return 1;
     }
-
-#   ifdef XMRIG_ALGO_CN_GPU
-    if (algorithm == Algorithm::CN_GPU) {
-        return count;
-    }
-#   endif
-
-#   ifdef XMRIG_ALGO_CN_LITE
-    if (algorithm.family() == Algorithm::CN_LITE) {
-        return CpuThreads(count, 1);
-    }
-#   endif
-
-#   ifdef XMRIG_ALGO_CN_PICO
-    if (algorithm.family() == Algorithm::CN_PICO) {
-        return CpuThreads(count, 2);
-    }
-#   endif
-
-#   ifdef XMRIG_ALGO_CN_HEAVY
-    if (algorithm.family() == Algorithm::CN_HEAVY) {
-        return CpuThreads(std::max<size_t>(count / 4, 1), 1);
-    }
-#   endif
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    if (algorithm.family() == Algorithm::RANDOM_X) {
-        if (algorithm == Algorithm::RX_WOW) {
-            return count;
-        }
-
-        return std::max<size_t>(count / 2, 1);
-    }
-#   endif
-
-#   ifdef XMRIG_ALGO_ARGON2
-    if (algorithm.family() == Algorithm::ARGON2) {
-        return count;
-    }
-#   endif
 
     return CpuThreads(std::max<size_t>(count / 2, 1), 1);
 }

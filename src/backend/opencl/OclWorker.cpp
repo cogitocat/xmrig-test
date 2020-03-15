@@ -36,17 +36,6 @@
 #include "crypto/common/Nonce.h"
 #include "net/JobResults.h"
 
-
-#ifdef XMRIG_ALGO_RANDOMX
-#   include "backend/opencl/runners/OclRxJitRunner.h"
-#   include "backend/opencl/runners/OclRxVmRunner.h"
-#endif
-
-#ifdef XMRIG_ALGO_CN_GPU
-#   include "backend/opencl/runners/OclRyoRunner.h"
-#endif
-
-
 #include <cassert>
 #include <thread>
 
@@ -74,44 +63,14 @@ static inline void printError(size_t id, const char *error)
 
 xmrig::OclWorker::OclWorker(size_t id, const OclLaunchData &data) :
     Worker(id, data.affinity, -1),
-    m_algorithm(data.algorithm),
     m_miner(data.miner),
     m_intensity(data.thread.intensity()),
     m_sharedData(OclSharedState::get(data.device.index()))
 {
-    switch (m_algorithm.family()) {
-    case Algorithm::RANDOM_X:
-#       ifdef XMRIG_ALGO_RANDOMX
-        if (data.thread.isAsm() && data.device.vendorId() == OCL_VENDOR_AMD) {
-            m_runner = new OclRxJitRunner(id, data);
-        }
-        else {
-            m_runner = new OclRxVmRunner(id, data);
-        }
-#       endif
-        break;
 
-    case Algorithm::ARGON2:
-#       ifdef XMRIG_ALGO_ARGON2
-        m_runner = nullptr; // TODO OclArgon2Runner
-#       endif
-        break;
-
-    default:
-#       ifdef XMRIG_ALGO_CN_GPU
-        if (m_algorithm == Algorithm::CN_GPU) {
-            m_runner = new OclRyoRunner(id, data);
-        }
-        else
-#       endif
-        {
-            m_runner = new OclCnRunner(id, data);
-        }
-        break;
-    }
-
-    if (!m_runner) {
-        return;
+    m_runner = new OclCnRunner(id, data);
+        if (!m_runner) {
+            return;
     }
 
     try {

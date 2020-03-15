@@ -29,23 +29,19 @@
 #include "crypto/cn/CnAlgo.h"
 #include "crypto/common/Algorithm.h"
 
-
-#include <algorithm>
-
-
 namespace xmrig {
 
 
 constexpr const size_t oneMiB = 1024u * 1024u;
 
 
-static inline uint32_t getMaxThreads(const OclDevice &device, const Algorithm &algorithm)
+static inline uint32_t getMaxThreads(const OclDevice &device)
 {
     if (device.vendorId() == OCL_VENDOR_NVIDIA && (device.name().contains("P100") || device.name().contains("V100"))) {
         return 40000u;
     }
 
-    const uint32_t ratio = (algorithm.l3() <= oneMiB) ? 2u : 1u;
+    const uint32_t ratio = 2u;
 
     if (device.vendorId() == OCL_VENDOR_INTEL) {
         return ratio * device.computeUnits() * 8;
@@ -55,25 +51,25 @@ static inline uint32_t getMaxThreads(const OclDevice &device, const Algorithm &a
 }
 
 
-static inline uint32_t getPossibleIntensity(const OclDevice &device, const Algorithm &algorithm)
+static inline uint32_t getPossibleIntensity(const OclDevice &device)
 {
-    const uint32_t maxThreads   = getMaxThreads(device, algorithm);
+    const uint32_t maxThreads   = getMaxThreads(device);
     const size_t minFreeMem     = (maxThreads == 40000u ? 512u : 128u) * oneMiB;
     const size_t availableMem   = device.freeMemSize() - minFreeMem;
-    const size_t perThread      = algorithm.l3() + 224u;
+    const size_t perThread      = CnAlgo::CN_MEMORY + 224u;
     const auto maxIntensity     = static_cast<uint32_t>(availableMem / perThread);
 
     return std::min<uint32_t>(maxThreads, maxIntensity);
 }
 
 
-static uint32_t getIntensity(const OclDevice &device, const Algorithm &algorithm)
+static uint32_t getIntensity(const OclDevice &device)
 {
     if (device.type() == OclDevice::Raven) {
         return 0;
     }
 
-    const uint32_t maxIntensity = getPossibleIntensity(device, algorithm);
+    const uint32_t maxIntensity = getPossibleIntensity(device);
 
     uint32_t intensity = (maxIntensity / (8 * device.computeUnits())) * device.computeUnits() * 8;
     if (intensity == 0) {
@@ -82,40 +78,32 @@ static uint32_t getIntensity(const OclDevice &device, const Algorithm &algorithm
 
     if (device.vendorId() == OCL_VENDOR_AMD && (device.type() == OclDevice::Lexa || device.type() == OclDevice::Baffin || device.computeUnits() <= 16)) {
         intensity /= 2;
-
-        if (algorithm.family() == Algorithm::CN_HEAVY) {
-            intensity /= 2;
-        }
     }
 
     return intensity;
 }
 
 
-static uint32_t getStridedIndex(const OclDevice &device, const Algorithm &algorithm)
+static uint32_t getStridedIndex(const OclDevice &device)
 {
     if (device.vendorId() != OCL_VENDOR_AMD) {
         return 0;
     }
 
-    return CnAlgo<>::base(algorithm) == Algorithm::CN_2 ? 2 : 1;
+    return 2;
 }
 
 
-bool ocl_generic_cn_generator(const OclDevice &device, const Algorithm &algorithm, OclThreads &threads)
+bool ocl_generic_cn_generator(const OclDevice &device, OclThreads &threads)
 {
-    if (!algorithm.isCN()) {
-        return false;
-    }
-
-    const uint32_t intensity = getIntensity(device, algorithm);
+    const uint32_t intensity = getIntensity(device);
     if (intensity == 0) {
         return false;
     }
 
-    const uint32_t threadCount = (device.vendorId() == OCL_VENDOR_AMD && (device.globalMemSize() - intensity * 2 * algorithm.l3()) > 128 * oneMiB) ? 2 : 1;
+    const uint32_t threadCount = (device.vendorId() == OCL_VENDOR_AMD && (device.globalMemSize() - intensity * 2 * CnAlgo::CN_MEMORY) > 128 * oneMiB) ? 2 : 1;
 
-    threads.add(OclThread(device.index(), intensity, 8, getStridedIndex(device, algorithm), 2, threadCount, 8));
+    threads.add(OclThread(device.index(), intensity, 8, getStridedIndex(device), 2, threadCount, 8));
 
     return true;
 }

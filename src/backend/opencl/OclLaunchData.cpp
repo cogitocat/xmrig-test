@@ -30,8 +30,7 @@
 #include "backend/opencl/OclConfig.h"
 
 
-xmrig::OclLaunchData::OclLaunchData(const Miner *miner, const Algorithm &algorithm, const OclConfig &config, const OclPlatform &platform, const OclThread &thread, const OclDevice &device, int64_t affinity) :
-    algorithm(algorithm),
+xmrig::OclLaunchData::OclLaunchData(const Miner *miner, const OclConfig &config, const OclPlatform &platform, const OclThread &thread, const OclDevice &device, int64_t affinity) :
     cache(config.isCacheEnabled()),
     affinity(affinity),
     miner(miner),
@@ -44,8 +43,7 @@ xmrig::OclLaunchData::OclLaunchData(const Miner *miner, const Algorithm &algorit
 
 bool xmrig::OclLaunchData::isEqual(const OclLaunchData &other) const
 {
-    return (other.algorithm == algorithm &&
-            other.thread    == thread);
+    return (other.thread == thread);
 }
 
 

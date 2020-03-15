@@ -41,24 +41,6 @@
 
 namespace xmrig {
 
-
-#ifdef XMRIG_FEATURE_ASM
-static const char *coloredAsmNames[] = {
-    RED_BOLD("none"),
-    "auto",
-    GREEN_BOLD("intel"),
-    GREEN_BOLD("ryzen"),
-    GREEN_BOLD("bulldozer")
-};
-
-
-inline static const char *asmName(Assembly::Id assembly)
-{
-    return coloredAsmNames[assembly];
-}
-#endif
-
-
 static void print_memory(Config *config) {
 #   ifdef _WIN32
     Log::print(GREEN_BOLD(" * ") WHITE_BOLD("%-13s") "%s",
@@ -101,28 +83,6 @@ static void print_cpu(Config *)
 #   endif
 }
 
-
-static void print_threads(Config *config)
-{
-    Log::print(GREEN_BOLD(" * ") WHITE_BOLD("%-13s") WHITE_BOLD("%s%d%%"),
-               "DONATE",
-               config->pools().donateLevel() == 0 ? RED_BOLD_S : "",
-               config->pools().donateLevel()
-               );
-
-#   ifdef XMRIG_FEATURE_ASM
-    if (config->cpu().assembly() == Assembly::AUTO) {
-        const Assembly assembly = Cpu::info()->assembly();
-
-        Log::print(GREEN_BOLD(" * ") WHITE_BOLD("%-13sauto:%s"), "ASSEMBLY", asmName(assembly));
-    }
-    else {
-        Log::print(GREEN_BOLD(" * ") WHITE_BOLD("%-13s%s"), "ASSEMBLY", asmName(config->cpu().assembly()));
-    }
-#   endif
-}
-
-
 static void print_commands(Config *)
 {
     if (Log::colors) {
@@ -144,9 +104,7 @@ void xmrig::Summary::print(Controller *controller)
     controller->config()->printVersions();
     print_memory(controller->config());
     print_cpu(controller->config());
-    print_threads(controller->config());
     controller->config()->pools().print();
-
     print_commands(controller->config());
 }
 

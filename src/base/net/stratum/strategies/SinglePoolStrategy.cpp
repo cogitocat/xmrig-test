@@ -68,13 +68,6 @@ void xmrig::SinglePoolStrategy::resume()
     m_listener->onJob(this, m_client, m_client->job());
 }
 
-
-void xmrig::SinglePoolStrategy::setAlgo(const Algorithm &algo)
-{
-    m_client->setAlgo(algo);
-}
-
-
 void xmrig::SinglePoolStrategy::stop()
 {
     m_client->disconnect();
@@ -120,10 +113,4 @@ void xmrig::SinglePoolStrategy::onLoginSuccess(IClient *client)
 void xmrig::SinglePoolStrategy::onResultAccepted(IClient *client, const SubmitResult &result, const char *error)
 {
     m_listener->onResultAccepted(this, client, result, error);
-}
-
-
-void xmrig::SinglePoolStrategy::onVerifyAlgorithm(const IClient *client, const Algorithm &algorithm, bool *ok)
-{
-    m_listener->onVerifyAlgorithm(this, client, algorithm, ok);
 }

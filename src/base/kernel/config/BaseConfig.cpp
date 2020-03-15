@@ -56,7 +56,6 @@
 #include "base/io/log/Log.h"
 #include "base/kernel/config/BaseConfig.h"
 #include "base/kernel/interfaces/IJsonReader.h"
-#include "donate.h"
 #include "rapidjson/document.h"
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/prettywriter.h"

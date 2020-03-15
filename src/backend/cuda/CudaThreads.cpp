@@ -44,10 +44,10 @@ xmrig::CudaThreads::CudaThreads(const rapidjson::Value &value)
 }
 
 
-xmrig::CudaThreads::CudaThreads(const std::vector<CudaDevice> &devices, const Algorithm &algorithm)
+xmrig::CudaThreads::CudaThreads(const std::vector<CudaDevice> &devices)
 {
     for (const auto &device : devices) {
-        device.generate(algorithm, *this);
+        device.generate(*this);
     }
 }
 

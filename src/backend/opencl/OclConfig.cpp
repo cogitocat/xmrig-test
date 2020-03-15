@@ -114,10 +114,10 @@ rapidjson::Value xmrig::OclConfig::toJSON(rapidjson::Document &doc) const
 }
 
 
-std::vector<xmrig::OclLaunchData> xmrig::OclConfig::get(const Miner *miner, const Algorithm &algorithm, const OclPlatform &platform, const std::vector<OclDevice> &devices) const
+std::vector<xmrig::OclLaunchData> xmrig::OclConfig::get(const Miner *miner, const OclPlatform &platform, const std::vector<OclDevice> &devices) const
 {
     std::vector<OclLaunchData> out;
-    const auto &threads = m_threads.get(algorithm);
+    const auto &threads = m_threads.get();
 
     if (threads.isEmpty()) {
         return out;
@@ -133,11 +133,11 @@ std::vector<xmrig::OclLaunchData> xmrig::OclConfig::get(const Miner *miner, cons
 
         if (thread.threads().size() > 1) {
             for (int64_t affinity : thread.threads()) {
-                out.emplace_back(miner, algorithm, *this, platform, thread, devices[thread.index()], affinity);
+                out.emplace_back(miner, *this, platform, thread, devices[thread.index()], affinity);
             }
         }
         else {
-            out.emplace_back(miner, algorithm, *this, platform, thread, devices[thread.index()], thread.threads().front());
+            out.emplace_back(miner, *this, platform, thread, devices[thread.index()], thread.threads().front());
         }
     }
 
@@ -174,7 +174,7 @@ void xmrig::OclConfig::read(const rapidjson::Value &value)
 
 void xmrig::OclConfig::generate()
 {
-    if (!isEnabled() || m_threads.has("*")) {
+    if (!isEnabled() || m_threads.has()) {
         return;
     }
 
@@ -189,11 +189,7 @@ void xmrig::OclConfig::generate()
 
     size_t count = 0;
 
-    count += xmrig::generate<Algorithm::CN>(m_threads, devices);
-    count += xmrig::generate<Algorithm::CN_LITE>(m_threads, devices);
-    count += xmrig::generate<Algorithm::CN_HEAVY>(m_threads, devices);
-    count += xmrig::generate<Algorithm::CN_PICO>(m_threads, devices);
-    count += xmrig::generate<Algorithm::RANDOM_X>(m_threads, devices);
+    count += xmrig::generate(m_threads, devices);
 
     m_shouldSave = count > 0;
 }

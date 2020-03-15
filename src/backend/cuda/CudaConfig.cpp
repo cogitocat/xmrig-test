@@ -76,7 +76,7 @@ rapidjson::Value xmrig::CudaConfig::toJSON(rapidjson::Document &doc) const
 }
 
 
-std::vector<xmrig::CudaLaunchData> xmrig::CudaConfig::get(const Miner *miner, const Algorithm &algorithm, const std::vector<CudaDevice> &devices) const
+std::vector<xmrig::CudaLaunchData> xmrig::CudaConfig::get(const Miner *miner, const std::vector<CudaDevice> &devices) const
 {
     auto deviceIndex = [&devices](uint32_t index) -> int {
         for (uint32_t i = 0; i < devices.size(); ++i) {
@@ -89,7 +89,7 @@ std::vector<xmrig::CudaLaunchData> xmrig::CudaConfig::get(const Miner *miner, co
     };
 
     std::vector<CudaLaunchData> out;
-    const auto &threads = m_threads.get(algorithm);
+    const auto &threads = m_threads.get();
 
     if (threads.isEmpty()) {
         return out;
@@ -104,7 +104,7 @@ std::vector<xmrig::CudaLaunchData> xmrig::CudaConfig::get(const Miner *miner, co
             continue;
         }
 
-        out.emplace_back(miner, algorithm, thread, devices[static_cast<size_t>(index)]);
+        out.emplace_back(miner, thread, devices[static_cast<size_t>(index)]);
     }
 
     return out;
@@ -152,7 +152,7 @@ void xmrig::CudaConfig::generate()
         return;
     }
 
-    if (!isEnabled() || m_threads.has("*")) {
+    if (!isEnabled() || m_threads.has()) {
         return;
     }
 
@@ -170,12 +170,7 @@ void xmrig::CudaConfig::generate()
     }
 
     size_t count = 0;
-
-    count += xmrig::generate<Algorithm::CN>(m_threads, devices);
-    count += xmrig::generate<Algorithm::CN_LITE>(m_threads, devices);
-    count += xmrig::generate<Algorithm::CN_HEAVY>(m_threads, devices);
-    count += xmrig::generate<Algorithm::CN_PICO>(m_threads, devices);
-    count += xmrig::generate<Algorithm::RANDOM_X>(m_threads, devices);
+    count += xmrig::generate(m_threads, devices);
 
     generated    = true;
     m_shouldSave = count > 0;

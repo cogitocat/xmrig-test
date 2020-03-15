@@ -54,7 +54,6 @@ protected:
     bool isEnabled() const override;
     bool isEnabled(const Algorithm &algorithm) const override;
     const Hashrate *hashrate() const override;
-    const String &profileName() const override;
     const String &type() const override;
     void execCommand(char command) override;
     void prepare(const Job &nextJob) override;

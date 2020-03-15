@@ -37,12 +37,6 @@
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/prettywriter.h"
 
-
-#ifdef XMRIG_ALGO_RANDOMX
-#   include "crypto/rx/RxConfig.h"
-#endif
-
-
 #ifdef XMRIG_FEATURE_OPENCL
 #   include "backend/opencl/OclConfig.h"
 #endif
@@ -56,10 +50,6 @@
 namespace xmrig {
 
 static const char *kCPU     = "cpu";
-
-#ifdef XMRIG_ALGO_RANDOMX
-static const char *kRandomX = "randomx";
-#endif
 
 #ifdef XMRIG_FEATURE_OPENCL
 static const char *kOcl     = "opencl";
@@ -79,10 +69,6 @@ class ConfigPrivate
 {
 public:
     CpuConfig cpu;
-
-#   ifdef XMRIG_ALGO_RANDOMX
-    RxConfig rx;
-#   endif
 
 #   ifdef XMRIG_FEATURE_OPENCL
     OclConfig cl;
@@ -133,15 +119,6 @@ const xmrig::CudaConfig &xmrig::Config::cuda() const
 }
 #endif
 
-
-#ifdef XMRIG_ALGO_RANDOMX
-const xmrig::RxConfig &xmrig::Config::rx() const
-{
-    return d_ptr->rx;
-}
-#endif
-
-
 #if defined(XMRIG_FEATURE_NVML)
 uint32_t xmrig::Config::healthPrintTime() const
 {
@@ -180,12 +157,6 @@ bool xmrig::Config::read(const IJsonReader &reader, const char *fileName)
 
     d_ptr->cpu.read(reader.getValue(kCPU));
 
-#   ifdef XMRIG_ALGO_RANDOMX
-    if (!d_ptr->rx.read(reader.getValue(kRandomX))) {
-        m_upgrade = true;
-    }
-#   endif
-
 #   ifdef XMRIG_FEATURE_OPENCL
     d_ptr->cl.read(reader.getValue(kOcl));
 #   endif
@@ -220,10 +191,6 @@ void xmrig::Config::getJSON(rapidjson::Document &doc) const
     doc.AddMember("background",        isBackground(), allocator);
     doc.AddMember("colors",            Log::colors, allocator);
 
-#   ifdef XMRIG_ALGO_RANDOMX
-    doc.AddMember(StringRef(kRandomX), rx().toJSON(doc), allocator);
-#   endif
-
     doc.AddMember(StringRef(kCPU),     cpu().toJSON(doc), allocator);
 
 #   ifdef XMRIG_FEATURE_OPENCL
@@ -234,8 +201,6 @@ void xmrig::Config::getJSON(rapidjson::Document &doc) const
     doc.AddMember(StringRef(kCuda),    cuda().toJSON(doc), allocator);
 #   endif
 
-    doc.AddMember("donate-level",               m_pools.donateLevel(), allocator);
-    doc.AddMember("donate-over-proxy",          m_pools.proxyDonate(), allocator);
     doc.AddMember("log-file",                   m_logFile.toJSON(), allocator);
     doc.AddMember("pools",                      m_pools.toJSON(doc), allocator);
     doc.AddMember("print-time",                 printTime(), allocator);

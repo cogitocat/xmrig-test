@@ -44,7 +44,6 @@ public:
     JobResult() = delete;
 
     inline JobResult(const Job &job, uint32_t nonce, const uint8_t *result) :
-        algorithm(job.algorithm()),
         clientId(job.clientId()),
         jobId(job.id()),
         backend(job.backend()),
@@ -59,7 +58,6 @@ public:
     inline uint64_t actualDiff() const      { return Job::toDiff(reinterpret_cast<const uint64_t*>(m_result)[3]); }
     inline uint8_t *result()                { return m_result; }
 
-    const Algorithm algorithm;
     const String clientId;
     const String jobId;
     const uint32_t backend;

@@ -43,9 +43,18 @@ xmrig::JsonChain::JsonChain()
 
 bool xmrig::JsonChain::add(rapidjson::Document &&doc)
 {
-    if (doc.HasParseError() || !doc.IsObject() || doc.ObjectEmpty()) {
+    if (doc.HasParseError()) {
         return false;
     }
+
+    if (!doc.IsObject()) {
+        return false;
+    }
+
+    if ( doc.ObjectEmpty()) {
+        return false;
+    }
+
 
     m_chain.push_back(std::move(doc));
 
